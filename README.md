@@ -1,5 +1,10 @@
 # Pessoa
 
+
+Fernando António Nogueira de Seabra Pessoa (/pɛˈsoʊə/;[1] Portuguese: [fɨɾˈnɐ̃du pɨˈsoɐ]; 13 June 1888–30 November 1935) was a Portuguese poet, writer, literary critic, translator, and publisher. He has been described as one of the most significant literary figures of the 20th century and one of the greatest poets in the Portuguese literature. He also wrote in and translated from English and French.
+
+Pessoa was a prolific writer both in his own name and approximately seventy-five other names, of which three stand out: Alberto Caeiro, Álvaro de Campos, and Ricardo Reis. He did not define these as pseudonyms because he felt that this did not capture their true independent intellectual life and instead called them heteronyms, a term he invented.[2] These imaginary figures sometimes held unpopular or extreme views.
+
 A local, ChatGPT-style assistant that speaks **Português de Portugal (pt-PT)** and
 remembers past conversations. Everything runs on your machine — the model via
 [Ollama](https://ollama.com), long-term memory via [mem0](https://github.com/mem0ai/mem0)
