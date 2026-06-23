@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -15,7 +16,7 @@ from mem0 import Memory
 
 MODEL = "gemma4:e4b"
 EMBED_MODEL = "nomic-embed-text"
-NUM_CTX = 1024  # More than enough for most tasks.
+NUM_CTX = 8192  # Big enough to fit an image/audio attachment + a real turn.
 KEEP_ALIVE = "45m"
 USER_ID = "pessoa"
 
@@ -166,12 +167,16 @@ def ensure_model_pulled():
             print(f"{model} already installed.")
 
 
-def stream_answer(mem: Memory, prompt: str):
+def stream_answer(
+    mem: Memory,
+    prompt: str,
+    images: list | None = None,
+    audios: list | None = None,
+):
     """Yield response chunks for `prompt`, enriched with relevant memory.
 
-    The full answer is stored back into memory once streaming completes. This is
-    a generator so the UI can render tokens as they arrive (st.write_stream) and
-    the CLI can print them incrementally.
+    `images` / `audios` are optional lists of raw bytes; they're attached to
+    the user turn (base64-encoded) so a multimodal model can see/hear them.
     """
     related = mem.search(prompt, filters={"user_id": USER_ID}, top_k=3).get("results", [])
     context = "\n".join(f"- {m['memory']}" for m in related)
@@ -182,21 +187,65 @@ def stream_answer(mem: Memory, prompt: str):
             "role": "system",
             "content": f"Memória relevante de conversas anteriores:\n{context}",
         })
-    messages.append({"role": "user", "content": prompt})
+    user_turn = {"role": "user", "content": prompt}
+    modalities = []
+    # ollama-python is most reliable when fed image *paths*; in-memory bytes
+    # can be silently dropped or misclassified depending on client version.
+    # Spool to temp files for the duration of the call, then unlink.
+    tmp_paths: list[Path] = []
+    if images:
+        for i, b in enumerate(images):
+            p = Path(tempfile.mkstemp(prefix=f"pessoa_img_{i}_", suffix=".bin")[1])
+            p.write_bytes(b)
+            tmp_paths.append(p)
+        user_turn["images"] = [str(p) for p in tmp_paths]
+        modalities.append("imagem(s)")
+        print(f"[pessoa] sending {len(images)} image(s) via "
+              f"{[str(p) for p in tmp_paths]}", flush=True)
+    if audios:
+        audio_paths = []
+        for i, b in enumerate(audios):
+            p = Path(tempfile.mkstemp(prefix=f"pessoa_aud_{i}_", suffix=".bin")[1])
+            p.write_bytes(b)
+            tmp_paths.append(p)
+            audio_paths.append(str(p))
+        user_turn["audios"] = audio_paths
+        modalities.append("áudio(s)")
+        print(f"[pessoa] sending {len(audios)} audio(s) via {audio_paths}", flush=True)
+
+    if modalities:
+        messages.insert(1, {
+            "role": "system",
+            "content": (
+                f"O utilizador anexou {' e '.join(modalities)} a esta mensagem. "
+                "Se conseguires mesmo ver/ouvir o conteúdo, descreve-o com "
+                "precisão e responde com base nele. Se NÃO conseguires aceder "
+                "ao conteúdo anexado, diz-o claramente — não inventes nem "
+                "adivinhes o que lá está."
+            ),
+        })
+    messages.append(user_turn)
 
     answer = ""
-    stream = ollama.chat(
-        model=MODEL,
-        messages=messages,
-        think=False,
-        keep_alive=KEEP_ALIVE,
-        options={"num_ctx": NUM_CTX, "stop": STOP},
-        stream=True,
-    )
-    for chunk in stream:
-        piece = chunk.message.content
-        answer += piece
-        yield piece
+    try:
+        stream = ollama.chat(
+            model=MODEL,
+            messages=messages,
+            think=False,
+            keep_alive=KEEP_ALIVE,
+            options={"num_ctx": NUM_CTX, "stop": STOP},
+            stream=True,
+        )
+        for chunk in stream:
+            piece = chunk.message.content
+            answer += piece
+            yield piece
+    finally:
+        for p in tmp_paths:
+            try:
+                p.unlink(missing_ok=True)
+            except OSError:
+                pass
 
     # Persist the exchange in the background. infer=False stores the raw turns
     # as memory WITHOUT mem0's LLM fact-extraction step — that extraction is a

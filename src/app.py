@@ -56,8 +56,10 @@ st.markdown(
         transition: background 0.15s ease, border-color 0.15s ease;
     }
     [data-testid="stSidebar"] .stButton button:hover {
-        background: var(--surface-2);
-        border-color: var(--border);
+        background: rgba(255, 255, 255, 0.11);
+        border-color: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.25);
     }
     [data-testid="stSidebar"] .stButton button[kind="primary"] {
         background: var(--surface-2);
@@ -88,13 +90,49 @@ st.markdown(
         background: rgba(16, 24, 18, 0.78);
     }
 
-    /* Chat input bar: more transparent than the sidebar so the background
-       gradient shows through clearly behind the prompt. */
+    /* Chat input bar: transparent body, animated PT-flag gradient as the
+       border (drawn via a masked ::before so we don't touch the textarea). */
     [data-testid="stChatInput"] {
+        position: relative;
         background: rgba(0, 0, 0, 0.18);
-        border: 1px solid var(--border);
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
         border-radius: 14px;
         backdrop-filter: blur(4px);
+    }
+    [data-testid="stChatInput"]::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        padding: 1.6px;
+        border-radius: 14px;
+        background: linear-gradient(
+            90deg,
+            #5a1212, #c8a13a, #0a3d22, #c8a13a, #5a1212
+        );
+        background-size: 300% 100%;
+        -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+                mask-composite: exclude;
+        animation: pessoa-border-flow 30s linear infinite;
+        pointer-events: none;
+        z-index: 1;
+        filter: brightness(1) saturate(1);
+        transition: filter 0.6s ease-out;
+    }
+    /* Burst on submit: animation runs ~22x faster and glows. Class is added
+       by JS on submit and removed after the burst window. */
+    body.pessoa-pulse [data-testid="stChatInput"]::before {
+        animation-duration: 1.5s;
+        filter: brightness(1.55) saturate(1.3) drop-shadow(0 0 7px rgba(200, 161, 58, 0.6));
+        transition: filter 0.12s ease-in;
+    }
+    @keyframes pessoa-border-flow {
+        from { background-position:   0% 50%; }
+        to   { background-position: 300% 50%; }
     }
     [data-testid="stChatInput"] textarea {
         color: var(--text);
@@ -127,6 +165,118 @@ st.markdown(
         background: rgba(200, 161, 58, 0.3);
         border-radius: 6px;
     }
+
+    /* Welcome / capabilities card shown before the first turn */
+    .pessoa-welcome {
+        max-width: 560px;
+        margin: 2rem auto 1.5rem auto;
+        padding: 1.25rem 1.5rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        backdrop-filter: blur(6px);
+        color: var(--text);
+        animation: pessoa-welcome-in 0.45s ease-out;
+    }
+    .pessoa-welcome-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: rgba(236, 236, 241, 0.5);
+        margin-bottom: 0.9rem;
+    }
+    .pessoa-welcome-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        font-size: 0.88rem;
+        padding: 0.35rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .pessoa-welcome-row:first-of-type { border-top: none; }
+    .pessoa-welcome-row b {
+        font-weight: 500;
+        color: rgba(236, 236, 241, 0.7);
+    }
+    .pessoa-welcome-row span {
+        text-align: right;
+        color: var(--text);
+    }
+    @keyframes pessoa-welcome-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Disclaimer under the chat input */
+    .pessoa-disclaimer {
+        position: fixed;
+        bottom: 0.35rem;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 760px;
+        width: calc(100% - 2rem);
+        text-align: center;
+        font-size: 0.7rem;
+        line-height: 1.35;
+        color: rgba(236, 236, 241, 0.45);
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    /* Hide Streamlit's "Ask Google / Ask ChatGPT" links on exception cards */
+    [data-testid="stException"] a[href*="google.com"],
+    [data-testid="stException"] a[href*="chatgpt.com"],
+    [data-testid="stException"] a[href*="chat.openai"],
+    .stException a[href*="google.com"],
+    .stException a[href*="chatgpt.com"],
+    .stException a[href*="chat.openai"] {
+        display: none !important;
+    }
+
+    /* Pull the sidebar content closer to the top */
+    [data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+        padding-top: 1.2rem;
+        padding-bottom: 5rem;  /* leave room for the pinned footer */
+    }
+
+    /* "pessoa" wordmark pinned to the bottom-left of the sidebar */
+    .pessoa-brand {
+        position: fixed;
+        bottom: 1rem;
+        left: 1rem;
+        line-height: 1;
+        pointer-events: none;
+        z-index: 1000;
+    }
+    .pessoa-brand .name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #ececf1;
+        letter-spacing: 0.3px;
+    }
+    .pessoa-brand .tag {
+        font-size: 0.68rem;
+        color: rgba(236, 236, 241, 0.45);
+        margin-top: 3px;
+    }
+
+    /* New chat / renamed chat animations -------------------------------- */
+    @keyframes chat-slide-in {
+        from { opacity: 0; transform: translateY(-6px); max-height: 0; }
+        to   { opacity: 1; transform: translateY(0);    max-height: 60px; }
+    }
+    @keyframes chat-typewriter {
+        from { clip-path: inset(0 100% 0 0); }
+        to   { clip-path: inset(0 0     0 0); }
+    }
+    .pessoa-just-created [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type {
+        animation: chat-slide-in 0.32s ease-out;
+    }
+    .pessoa-just-named [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type .stButton button p {
+        animation: chat-typewriter 0.55s steps(28, end);
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -149,6 +299,7 @@ def new_chat() -> int:
     st.session_state.next_id += 1
     st.session_state.chats[cid] = {"title": "Nova conversa", "messages": []}
     st.session_state.current = cid
+    st.session_state.just_created = True
     return cid
 
 
@@ -156,9 +307,24 @@ if "chats" not in st.session_state:
     st.session_state.chats = {}
     st.session_state.next_id = 1
     new_chat()
+    st.session_state.just_created = False  # don't animate the initial chat
 
 
 # --- Sidebar: create / select / delete chats --------------------------------
+# One-shot animation flags: scope the keyframes to <body> by toggling a class.
+anim_classes = []
+if st.session_state.pop("just_created", False):
+    anim_classes.append("pessoa-just-created")
+if st.session_state.pop("just_named", False):
+    anim_classes.append("pessoa-just-named")
+if anim_classes:
+    st.markdown(
+        f"<script>document.body.classList.add({', '.join(repr(c) for c in anim_classes)});"
+        f"setTimeout(() => document.body.classList.remove({', '.join(repr(c) for c in anim_classes)}), 800);"
+        "</script>",
+        unsafe_allow_html=True,
+    )
+
 with st.sidebar:
     if st.button("➕ Nova conversa", use_container_width=True):
         new_chat()
@@ -178,7 +344,7 @@ with st.sidebar:
         ):
             st.session_state.current = cid
             st.rerun()
-        if delete_col.button("🗑️", key=f"del_{cid}", help="Eliminar conversa"):
+        if delete_col.button("×", key=f"del_{cid}", help="Eliminar conversa"):
             del st.session_state.chats[cid]
             if not st.session_state.chats:
                 new_chat()
@@ -186,28 +352,117 @@ with st.sidebar:
                 st.session_state.current = next(reversed(st.session_state.chats))
             st.rerun()
 
+    st.markdown(
+        """
+        <div class="pessoa-brand">
+            <div class="name">pessoa</div>
+            <div class="tag">powered by gemma 4</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # --- Main: the active conversation ------------------------------------------
 conv = st.session_state.chats[st.session_state.current]
 generating = st.session_state.get("generating", False)
 
+# One-shot "submit burst": pop the gradient into fast-and-bright for ~1.6s
+# right after the user presses enter, then let it ease back to its slow rhythm.
+if st.session_state.pop("submit_pulse", False):
+    st.markdown(
+        "<script>"
+        "document.body.classList.add('pessoa-pulse');"
+        "setTimeout(() => document.body.classList.remove('pessoa-pulse'), 1600);"
+        "</script>",
+        unsafe_allow_html=True,
+    )
+
+IMAGE_EXTS = {"png", "jpg", "jpeg", "webp", "gif"}
+AUDIO_EXTS = {"mp3", "wav", "ogg", "m4a", "flac"}
+
+
+def _ext(name: str) -> str:
+    return name.rsplit(".", 1)[-1].lower() if "." in name else ""
+
+
 # Replay the conversation so far.
 for msg in conv["messages"]:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        for att in msg.get("attachments", []):
+            ext = _ext(att["name"])
+            if ext in IMAGE_EXTS:
+                st.image(att["data"], caption=att["name"], width="stretch")
+            elif ext in AUDIO_EXTS:
+                st.audio(att["data"])
+                st.caption(f"🎵 {att['name']}")
+            else:
+                st.caption(f"📎 {att['name']}")
+        if msg["content"]:
+            st.markdown(msg["content"])
+
+# Empty-state welcome card: model capabilities, shown only before any turn.
+if not conv["messages"] and not generating:
+    st.markdown(
+        f"""
+        <div class="pessoa-welcome">
+            <div class="pessoa-welcome-title">Capacidades do modelo</div>
+            <div class="pessoa-welcome-row"><b>Modelo</b><span>{chat.MODEL} (multimodal)</span></div>
+            <div class="pessoa-welcome-row"><b>Entradas suportadas</b><span>texto, imagem, áudio</span></div>
+            <div class="pessoa-welcome-row"><b>Janela de contexto máxima</b><span>128K tokens</span></div>
+            <div class="pessoa-welcome-row"><b>Janela em uso (inferência)</b><span>{chat.NUM_CTX:,} tokens — reduzida para resposta mais rápida</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+st.markdown(
+    """
+    <div class="pessoa-disclaimer">
+        pessoa pode cometer erros. Verifica sempre o que ele diz.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # New input -> store the user turn and flip into "generating" mode on a rerun,
 # so the Stop button can be rendered alongside the streaming answer.
-if prompt := st.chat_input("Escreve uma mensagem…"):
-    conv["messages"].append({"role": "user", "content": prompt})
-    if conv["title"] == "Nova conversa":  # name the chat after its first message
-        conv["title"] = prompt[:40] + ("…" if len(prompt) > 40 else "")
-    st.session_state.generating = True
-    st.rerun()
+submitted = st.chat_input(
+    "Escreve uma mensagem…",
+    accept_file="multiple",
+    file_type=sorted(IMAGE_EXTS | AUDIO_EXTS),
+)
+if submitted:
+    text = submitted.text if hasattr(submitted, "text") else submitted
+    files = submitted.files if hasattr(submitted, "files") else []
+    attachments = [{"name": f.name, "data": f.getvalue()} for f in files]
+    if text or attachments:
+        conv["messages"].append({
+            "role": "user",
+            "content": text or "",
+            "attachments": attachments,
+        })
+        if conv["title"] == "Nova conversa":
+            seed = text or (attachments[0]["name"] if attachments else "Nova conversa")
+            conv["title"] = seed[:40] + ("…" if len(seed) > 40 else "")
+            st.session_state.just_named = True
+        st.session_state.generating = True
+        st.session_state.submit_pulse = True
+        st.rerun()
 
 # Generation phase: stream the answer to the last user turn.
+# Guard: the user may have switched/deleted chats mid-generation, leaving the
+# flag set against a conversation whose last turn isn't theirs (or is empty).
+if generating and (not conv["messages"] or conv["messages"][-1]["role"] != "user"):
+    st.session_state.generating = False
+    generating = False
+
 if generating:
-    user_prompt = conv["messages"][-1]["content"]
+    last_turn = conv["messages"][-1]
+    user_prompt = last_turn["content"]
+    atts = last_turn.get("attachments", [])
+    image_bytes = [a["data"] for a in atts if _ext(a["name"]) in IMAGE_EXTS]
+    audio_bytes = [a["data"] for a in atts if _ext(a["name"]) in AUDIO_EXTS]
 
     def stop_generation():
         """Runs as a button callback at the start of the interrupting rerun:
@@ -229,7 +484,12 @@ if generating:
             unsafe_allow_html=True,
         )
         full = ""
-        gen = chat.stream_answer(mem, user_prompt)
+        gen = chat.stream_answer(
+            mem,
+            user_prompt,
+            images=image_bytes or None,
+            audios=audio_bytes or None,
+        )
         try:
             for piece in gen:
                 full += piece
