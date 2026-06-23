@@ -3,6 +3,7 @@
 Used by both the CLI (main.py) and the Streamlit UI (src/app.py).
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -167,16 +168,94 @@ def ensure_model_pulled():
             print(f"{model} already installed.")
 
 
+def _ddgs():
+    try:
+        from ddgs import DDGS
+    except ImportError:
+        from duckduckgo_search import DDGS
+    return DDGS()
+
+
+def web_search(query: str, text_n: int = 8, news_n: int = 5) -> str:
+    """DuckDuckGo text + news hits as a bulleted block. '' on failure."""
+    try:
+        d = _ddgs()
+        text_hits = list(d.text(query, max_results=text_n)) or []
+        try:
+            news_hits = list(d.news(query, max_results=news_n)) or []
+        except Exception:
+            news_hits = []
+        print(f"[pessoa] web_search '{query}' → "
+              f"{len(text_hits)} text, {len(news_hits)} news", flush=True)
+        lines = []
+        for h in text_hits:
+            lines.append(f"- {h.get('title','')}: {h.get('body','')} "
+                         f"({h.get('href','')})")
+        for h in news_hits:
+            lines.append(f"- [notícia {h.get('date','')}] {h.get('title','')}: "
+                         f"{h.get('body','')} ({h.get('url') or h.get('href','')})")
+        return "\n".join(lines)
+    except Exception as e:
+        print(f"[pessoa] web_search FAILED: {e}", flush=True)
+        return ""
+
+
+_WEATHER_RE = re.compile(
+    r"(?:tempo|clima|previs[ãa]o|weather|forecast)\s+"
+    r"(?:de|em|in|no|na|para|of|do|da)\s+"
+    r"([\wÀ-ÿ][\wÀ-ÿ\s\-\.']{1,40}?)"
+    r"(?=\?|$|\.|,|!|;| hoje| amanh| amanhã| tomorrow| today)",
+    re.IGNORECASE,
+)
+
+
+def _weather_location(prompt: str) -> str | None:
+    m = _WEATHER_RE.search(prompt)
+    return m.group(1).strip() if m else None
+
+
+def weather_lookup(location: str) -> str:
+    """Live current+3-day forecast from wttr.in. '' on failure."""
+    try:
+        import httpx
+        r = httpx.get(f"https://wttr.in/{location}", params={"format": "j1"},
+                      timeout=5.0, headers={"User-Agent": "pessoa/0.1"})
+        r.raise_for_status()
+        j = r.json()
+        now = j["current_condition"][0]
+        area = (j.get("nearest_area") or [{}])[0]
+        place = area.get("areaName", [{}])[0].get("value", location)
+        country = area.get("country", [{}])[0].get("value", "")
+        lines = [
+            f"Local: {place}, {country}",
+            f"Agora: {now['weatherDesc'][0]['value']}, {now['temp_C']}°C "
+            f"(sente-se {now['FeelsLikeC']}°C), vento {now['windspeedKmph']} km/h, "
+            f"humidade {now['humidity']}%",
+        ]
+        for d in j.get("weather", [])[:3]:
+            mid = d["hourly"][4] if len(d.get("hourly", [])) > 4 else {}
+            lines.append(
+                f"{d['date']}: {d['mintempC']}°C a {d['maxtempC']}°C, "
+                f"meio-dia: {mid.get('weatherDesc',[{'value':'?'}])[0]['value']}"
+            )
+        print(f"[pessoa] weather '{location}' → ok", flush=True)
+        return "\n".join(lines)
+    except Exception as e:
+        print(f"[pessoa] weather '{location}' FAILED: {e}", flush=True)
+        return ""
+
+
 def stream_answer(
     mem: Memory,
     prompt: str,
     images: list | None = None,
     audios: list | None = None,
+    use_web: bool = False,
 ):
     """Yield response chunks for `prompt`, enriched with relevant memory.
 
-    `images` / `audios` are optional lists of raw bytes; they're attached to
-    the user turn (base64-encoded) so a multimodal model can see/hear them.
+    `images` / `audios` attach to the user turn for multimodal models.
+    `use_web` runs a live DuckDuckGo search and injects the top hits.
     """
     related = mem.search(prompt, filters={"user_id": USER_ID}, top_k=3).get("results", [])
     context = "\n".join(f"- {m['memory']}" for m in related)
@@ -187,6 +266,39 @@ def stream_answer(
             "role": "system",
             "content": f"Memória relevante de conversas anteriores:\n{context}",
         })
+    if use_web:
+        blocks = []
+        loc = _weather_location(prompt)
+        if loc:
+            w = weather_lookup(loc)
+            if w:
+                blocks.append(
+                    "DADOS METEOROLÓGICOS EM TEMPO REAL (wttr.in):\n" + w
+                )
+        web = web_search(prompt)
+        if web:
+            blocks.append("RESULTADOS DE PESQUISA WEB (DuckDuckGo):\n" + web)
+        if blocks:
+            messages.append({
+                "role": "system",
+                "content": (
+                    "FACTOS EM TEMPO REAL — tenho neste momento acesso aos "
+                    "seguintes dados, obtidos agora da internet. São factos "
+                    "atuais e fiáveis; usa-os para responder à pergunta do "
+                    "utilizador na primeira pessoa, citando valores concretos "
+                    "(temperatura, datas, números, fontes). Nunca digas que "
+                    "não tens acesso à internet — tenho, e os dados estão "
+                    "aqui:\n\n" + "\n\n".join(blocks)
+                ),
+            })
+        else:
+            messages.append({
+                "role": "system",
+                "content": (
+                    "Tentei pesquisar na internet mas não obtive resultados. "
+                    "Avisa o utilizador disso e responde com base no que sabes."
+                ),
+            })
     user_turn = {"role": "user", "content": prompt}
     modalities = []
     # ollama-python is most reliable when fed image *paths*; in-memory bytes
