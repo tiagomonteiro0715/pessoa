@@ -2,11 +2,15 @@
 
 This project is not just another personal assistant.
 
+I have lived in the San Francisco Bay Area for almost a year, and currently, like chips gave way to computers and computers to the internet, AI is giving way to agents, which is giving way to far better robotics and systems. Hierarchical evolution is happening, and that is why physical IA is the next big thing.
+
 It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
 
-Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices 
+Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices.
 
-The first great thing about this project is its ability to easily be used; with uv and uv lock, the Python dependencies are exactly defined, and the code structure is modular. This way, it is possible to add other files or folders to increase the current codebase. Also,  Everything runs on your machine. The model runs via [Ollama](https://ollama.com) with long-term memory [mem0](https://github.com/mem0ai/mem0) backed by a local [Qdrant](https://qdrant.tech) store.
+The first great thing about this project is its ability to easily be used; with uv and uv lock, the Python dependencies are exactly defined, and the code structure is modular. This way, it is possible to add other files or folders to increase the current codebase. Also, everything everything runs on your machine. The model runs via [Ollama](https://ollama.com) with long-term memory [mem0](https://github.com/mem0ai/mem0) backed by a local [Qdrant](https://qdrant.tech) store.
+
+Also, her ein bay area mem0 is widely used I know founders that used in in their starytup
 
 To ensure transparency, open-source models like Gemma or Qwen are already good for many tasks AI agents can do. For this reason, this stack is not locked into one provider. If you want, you can run it on a laptop and even change the code to run with vLLM on a server for wide organization adoption. In addition, a system prompt enforces pt-PT output. However, the underlying model reads English, which is a big advantage.
 
