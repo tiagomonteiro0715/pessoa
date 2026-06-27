@@ -32,7 +32,7 @@ I recommend changing Ollama for vLLM. This way, the system prompt may be adaptab
 
 ## Why is this project called "Pessoa"?
 
-![image of fernando pessoa]([Image_URL_or_Path](https://github.com/tiagomonteiro0715/pessoa/blob/main/fernando.jpg))
+![image of fernando pessoa](https://github.com/tiagomonteiro0715/pessoa/blob/main/fernando.jpg))
 
 Named after **Fernando António Nogueira de Seabra Pessoa** (13 June 1888 to 30 November 1935), regarded as one of the most important Portuguese literary figures of the 20th century and one of the greatest poets in the Portuguese language. *Pessoa* also means "person" in Portuguese.
 
