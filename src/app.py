@@ -5,6 +5,7 @@ Assumes Ollama is already running and the models are pulled.
 """
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from threading import Thread
 
@@ -16,337 +17,12 @@ from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ct
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chat  # noqa: E402
 
-st.set_page_config(page_title="pessoa: runs on gemma 4", layout="centered")
+st.set_page_config(page_title=f"pessoa: runs on {chat.MODEL}", layout="centered")
 
 # Dark, professional theme (ChatGPT/Claude-like) over a muted gradient in the
 # colors of Portugal: deep green → gold → deep red.
-st.markdown(
-    """
-    <style>
-    :root {
-        --pt-green: #0a3d22;
-        --pt-gold:  #c8a13a;
-        --pt-red:   #5a1212;
-        --surface:  rgba(255, 255, 255, 0.04);
-        --surface-2: rgba(255, 255, 255, 0.07);
-        --border:   rgba(255, 255, 255, 0.10);
-        --text:     #ececf1;
-    }
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(150deg, #03150c 0%, #0a3019 38%, #2c2509 56%, #3a0d0d 78%, #140404 100%);
-        background-attachment: fixed;
-        color: var(--text);
-    }
-    [data-testid="stHeader"] { background: transparent; }
-    .block-container { max-width: 820px; padding-top: 3rem; padding-bottom: 7rem; }
-
-    /* Sidebar: black, but transparent so the background gradient shows through */
-    [data-testid="stSidebar"] {
-        background: rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(6px);
-        border-right: 1px solid var(--border);
-    }
-    [data-testid="stSidebar"] .stButton button {
-        border-radius: 8px;
-        border: none;
-        background: transparent;
-        color: rgba(236, 236, 241, 0.82);
-        text-align: left;
-        font-weight: 400;
-        font-size: 0.875rem;
-        padding: 0.45rem 0.65rem;
-        transition: background 0.12s ease, color 0.12s ease;
-    }
-    [data-testid="stSidebar"] .stButton button:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #ffffff;
-    }
-    [data-testid="stSidebar"] .stButton button[kind="primary"] {
-        background: rgba(255, 255, 255, 0.06);
-        color: #ffffff;
-    }
-    /* Delete button: only visible on row hover */
-    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div:last-child .stButton button {
-        opacity: 0;
-        color: rgba(236, 236, 241, 0.5);
-        padding: 0.45rem 0.4rem;
-        transition: opacity 0.15s ease, color 0.12s ease;
-    }
-    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:hover > div:last-child .stButton button {
-        opacity: 1;
-    }
-    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div:last-child .stButton button:hover {
-        background: transparent;
-        color: #ffffff;
-    }
-    /* Drop the visible divider — whitespace is enough */
-    [data-testid="stSidebar"] hr {
-        display: none;
-    }
-
-    /* Chat messages -> rounded bubbles */
-    [data-testid="stChatMessage"] {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 0.85rem 1.1rem;
-        margin-bottom: 0.6rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-        gap: 0;
-    }
-
-    /* Hide the default avatar icons to the left of each message/prompt */
-    [data-testid="stChatMessageAvatarUser"],
-    [data-testid="stChatMessageAvatarAssistant"],
-    [data-testid="stChatMessageAvatar"] {
-        display: none;
-    }
-
-    /* User prompt bubbles: less transparent than assistant replies, so the
-       message you just sent stands out. Matched via the (hidden) user avatar. */
-    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-        background: rgba(16, 24, 18, 0.78);
-    }
-
-    /* Chat input bar: transparent body, animated PT-flag gradient as the
-       border (drawn via a masked ::before so we don't touch the textarea). */
-    [data-testid="stChatInput"] {
-        position: relative;
-        background: rgba(0, 0, 0, 0.18);
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        border-radius: 14px;
-        backdrop-filter: blur(4px);
-    }
-    [data-testid="stChatInput"]::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        padding: 1.6px;
-        border-radius: 14px;
-        background: linear-gradient(
-            90deg,
-            #5a1212, #c8a13a, #0a3d22, #c8a13a, #5a1212
-        );
-        background-size: 300% 100%;
-        -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-                mask-composite: exclude;
-        animation: pessoa-border-flow 30s linear infinite;
-        pointer-events: none;
-        z-index: 1;
-        filter: brightness(1) saturate(1);
-        transition: filter 0.6s ease-out;
-    }
-    /* Burst on submit: animation runs ~22x faster and glows. Class is added
-       by JS on submit and removed after the burst window. */
-    body.pessoa-pulse [data-testid="stChatInput"]::before {
-        animation-duration: 1.5s;
-        filter: brightness(1.55) saturate(1.3) drop-shadow(0 0 7px rgba(200, 161, 58, 0.6));
-        transition: filter 0.12s ease-in;
-    }
-    @keyframes pessoa-border-flow {
-        from { background-position:   0% 50%; }
-        to   { background-position: 300% 50%; }
-    }
-    [data-testid="stChatInput"] textarea {
-        color: var(--text);
-        background: transparent;
-    }
-    /* Streamlit wraps the input bottom area in its own container — clear it too
-       so no opaque band sits behind the transparent prompt. */
-    [data-testid="stBottomBlockContainer"],
-    [data-testid="stBottom"] > div {
-        background: transparent;
-    }
-
-    /* Typing indicator shown while waiting for the first token (no empty box) */
-    .typing { display: inline-flex; gap: 6px; padding: 2px; }
-    .typing span {
-        width: 7px; height: 7px; border-radius: 50%;
-        background: var(--pt-gold);
-        animation: typing-bounce 1.2s infinite ease-in-out;
-    }
-    .typing span:nth-child(2) { animation-delay: 0.18s; }
-    .typing span:nth-child(3) { animation-delay: 0.36s; }
-    @keyframes typing-bounce {
-        0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-        30%           { opacity: 1;   transform: translateY(-4px); }
-    }
-
-    /* Subtle gold accent on focus / scrollbar */
-    ::-webkit-scrollbar { width: 9px; }
-    ::-webkit-scrollbar-thumb {
-        background: rgba(200, 161, 58, 0.3);
-        border-radius: 6px;
-    }
-
-    /* Welcome / capabilities card shown before the first turn */
-    .pessoa-welcome {
-        max-width: 560px;
-        margin: 2rem auto 1.5rem auto;
-        padding: 1.25rem 1.5rem;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        backdrop-filter: blur(6px);
-        color: var(--text);
-        animation: pessoa-welcome-in 0.45s ease-out;
-    }
-    .pessoa-welcome-title {
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: rgba(236, 236, 241, 0.5);
-        margin-bottom: 0.9rem;
-    }
-    .pessoa-welcome-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 1rem;
-        font-size: 0.88rem;
-        padding: 0.35rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .pessoa-welcome-row:first-of-type { border-top: none; }
-    .pessoa-welcome-row b {
-        font-weight: 500;
-        color: rgba(236, 236, 241, 0.7);
-    }
-    .pessoa-welcome-row span {
-        text-align: right;
-        color: var(--text);
-    }
-    @keyframes pessoa-welcome-in {
-        from { opacity: 0; transform: translateY(8px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Queued prompts: bubbles containing the .pessoa-queued-tag get a muted
-       look — lower opacity, dashed border, pulsing dot — to show they're
-       waiting for the active stream to finish. */
-    [data-testid="stChatMessage"]:has(.pessoa-queued-tag) {
-        opacity: 0.55;
-        background: rgba(16, 24, 18, 0.35) !important;
-        border: 1px dashed rgba(200, 161, 58, 0.45) !important;
-        box-shadow: none !important;
-    }
-    .pessoa-queued-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 0.72rem;
-        font-style: italic;
-        color: rgba(236, 236, 241, 0.7);
-        margin-bottom: 0.5rem;
-    }
-    .pessoa-queued-tag::before {
-        content: '';
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--pt-gold);
-        animation: pessoa-queued-pulse 1.4s ease-in-out infinite;
-    }
-    @keyframes pessoa-queued-pulse {
-        0%, 100% { opacity: 0.3; transform: scale(0.85); }
-        50%      { opacity: 1;   transform: scale(1.1); }
-    }
-
-    /* Disclaimer: rendered as a pseudo-element of the bottom container so it
-       sits directly below the chat input — not pinned to viewport bottom. */
-    [data-testid="stBottomBlockContainer"]::after {
-        content: 'pessoa pode cometer erros. Verifica sempre o que ele diz.';
-        display: block;
-        text-align: center;
-        font-size: 0.7rem;
-        line-height: 1.35;
-        color: rgba(236, 236, 241, 0.45);
-        padding: 0.45rem 1rem 0.1rem 1rem;
-        pointer-events: none;
-    }
-
-    /* Hide Streamlit's "Ask Google / Ask ChatGPT" links on exception cards */
-    [data-testid="stException"] a[href*="google.com"],
-    [data-testid="stException"] a[href*="chatgpt.com"],
-    [data-testid="stException"] a[href*="chat.openai"],
-    .stException a[href*="google.com"],
-    .stException a[href*="chatgpt.com"],
-    .stException a[href*="chat.openai"] {
-        display: none !important;
-    }
-
-    /* Pull the sidebar content closer to the top */
-    [data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
-        padding-top: 1.2rem;
-        padding-bottom: 5rem;  /* leave room for the pinned footer */
-    }
-
-    /* "pessoa" wordmark pinned to the bottom-left of the sidebar */
-    .pessoa-brand {
-        position: fixed;
-        bottom: 0.9rem;
-        left: 1rem;
-        line-height: 1.2;
-        pointer-events: none;
-        z-index: 1000;
-    }
-    .pessoa-brand .name {
-        font-size: 0.92rem;
-        font-weight: 500;
-        color: rgba(236, 236, 241, 0.78);
-        letter-spacing: 0.2px;
-    }
-    .pessoa-brand .tag {
-        font-size: 0.66rem;
-        color: rgba(236, 236, 241, 0.35);
-        margin-top: 2px;
-    }
-    .pessoa-brand .repo {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        margin-top: 6px;
-        font-size: 0.66rem;
-        color: rgba(236, 236, 241, 0.4);
-        text-decoration: none;
-        pointer-events: auto;
-        transition: color 0.12s ease;
-    }
-    .pessoa-brand .repo:hover {
-        color: rgba(236, 236, 241, 0.85);
-    }
-    .pessoa-brand .repo svg {
-        opacity: 0.7;
-    }
-
-    /* New chat / renamed chat animations -------------------------------- */
-    @keyframes chat-slide-in {
-        from { opacity: 0; transform: translateY(-6px); max-height: 0; }
-        to   { opacity: 1; transform: translateY(0);    max-height: 60px; }
-    }
-    @keyframes chat-typewriter {
-        from { clip-path: inset(0 100% 0 0); }
-        to   { clip-path: inset(0 0     0 0); }
-    }
-    .pessoa-just-created [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type {
-        animation: chat-slide-in 0.32s ease-out;
-    }
-    .pessoa-just-named [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:first-of-type .stButton button p {
-        animation: chat-typewriter 0.55s steps(28, end);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+_CSS = (Path(__file__).resolve().parent / "styles.css").read_text(encoding="utf-8")
+st.markdown(f"<style>{_CSS}</style>", unsafe_allow_html=True)
 
 
 @st.cache_resource(show_spinner="A ligar à memória…")
@@ -400,14 +76,50 @@ def _start_stream(prompt, images, audios, target_idx, chat_id, use_web=False):
 
 
 # --- Multi-chat state -------------------------------------------------------
-# chats: {chat_id: {"title": str, "messages": [{"role", "content"}, ...]}}
+# chats: {chat_id: {"title", "messages", "created_at"}}
 def new_chat() -> int:
     cid = st.session_state.next_id
     st.session_state.next_id += 1
-    st.session_state.chats[cid] = {"title": "Nova conversa", "messages": []}
+    st.session_state.chats[cid] = {
+        "title": "Nova conversa",
+        "messages": [],
+        "created_at": time.time(),
+    }
     st.session_state.current = cid
     st.session_state.just_created = True
     return cid
+
+
+_DATE_GROUPS = ("Hoje", "Ontem", "Últimos 7 dias", "Últimos 30 dias", "Mais antigos")
+_SHOW_LIMIT = 25
+
+
+def _group_label(ts: float) -> str:
+    delta = (datetime.now().date() - datetime.fromtimestamp(ts).date()).days
+    if delta <= 0:
+        return "Hoje"
+    if delta == 1:
+        return "Ontem"
+    if delta < 7:
+        return "Últimos 7 dias"
+    if delta < 30:
+        return "Últimos 30 dias"
+    return "Mais antigos"
+
+
+def _delete_chat(cid: int) -> None:
+    del st.session_state.chats[cid]
+    if not st.session_state.chats:
+        new_chat()
+    elif st.session_state.current == cid:
+        st.session_state.current = next(reversed(st.session_state.chats))
+
+
+def _commit_rename(cid: int) -> None:
+    new = (st.session_state.get(f"rename_{cid}") or "").strip()
+    if new:
+        st.session_state.chats[cid]["title"] = new[:60]
+    st.session_state.editing_cid = None
 
 
 if "chats" not in st.session_state:
@@ -432,40 +144,103 @@ if anim_classes:
         unsafe_allow_html=True,
     )
 
+# Chat currently being streamed (may differ from the active one if the user
+# switched mid-stream). Used to mark its sidebar row.
+_active_stream = st.session_state.get("stream")
+_streaming_cid = (
+    _active_stream.get("chat_id")
+    if _active_stream and not _active_stream.get("finalized")
+    else None
+)
+
 with st.sidebar:
     if st.button("Nova conversa", use_container_width=True, key="new_chat_btn"):
         new_chat()
         st.rerun()
-    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+    st.text_input(
+        "search",
+        placeholder="Pesquisar conversas…",
+        label_visibility="collapsed",
+        key="search_query",
+    )
 
-    for cid, conv in reversed(list(st.session_state.chats.items())):
-        select_col, delete_col = st.columns([5, 1])
-        label = conv["title"] or "Nova conversa"
-        is_current = cid == st.session_state.current
-        if select_col.button(
-            label,
-            key=f"sel_{cid}",
+    query = (st.session_state.get("search_query") or "").lower().strip()
+    filtered = [
+        (cid, conv) for cid, conv in st.session_state.chats.items()
+        if not query or query in (conv["title"] or "").lower()
+    ]
+    groups: dict[str, list] = {}
+    for cid, conv in filtered:
+        groups.setdefault(
+            _group_label(conv.get("created_at", time.time())), []
+        ).append((cid, conv))
+
+    show_all = st.session_state.get("show_all_chats", False)
+    shown = 0
+    capped = False
+    for label in _DATE_GROUPS:
+        items = groups.get(label, [])
+        if not items or capped:
+            continue
+        st.markdown(
+            f'<div class="pessoa-group-label">{label}</div>',
+            unsafe_allow_html=True,
+        )
+        for cid, conv in reversed(items):
+            if not show_all and shown >= _SHOW_LIMIT:
+                capped = True
+                break
+            shown += 1
+
+            if st.session_state.get("editing_cid") == cid:
+                st.text_input(
+                    "rename",
+                    value=conv["title"],
+                    key=f"rename_{cid}",
+                    label_visibility="collapsed",
+                    on_change=_commit_rename,
+                    args=(cid,),
+                )
+                continue
+
+            sel_col, kebab_col = st.columns([5, 1])
+            title = conv["title"] or "Nova conversa"
+            if cid == _streaming_cid:
+                title = "● " + title
+            is_current = cid == st.session_state.current
+            if sel_col.button(
+                title,
+                key=f"sel_{cid}",
+                use_container_width=True,
+                type="primary" if is_current else "secondary",
+            ):
+                st.session_state.current = cid
+                st.rerun()
+            with kebab_col.popover("⋯", use_container_width=True):
+                if st.button("Renomear", key=f"ren_{cid}", use_container_width=True):
+                    st.session_state.editing_cid = cid
+                    st.rerun()
+                if st.button("Eliminar", key=f"era_{cid}", use_container_width=True):
+                    _delete_chat(cid)
+                    st.rerun()
+
+    if not show_all and len(filtered) > _SHOW_LIMIT:
+        if st.button(
+            f"Mostrar mais ({len(filtered) - _SHOW_LIMIT})",
             use_container_width=True,
-            type="primary" if is_current else "secondary",
+            key="show_more",
         ):
-            st.session_state.current = cid
-            st.rerun()
-        if delete_col.button("×", key=f"del_{cid}", help="Eliminar conversa"):
-            del st.session_state.chats[cid]
-            if not st.session_state.chats:
-                new_chat()
-            elif st.session_state.current == cid:
-                st.session_state.current = next(reversed(st.session_state.chats))
+            st.session_state.show_all_chats = True
             st.rerun()
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     st.toggle("🌐 Internet", key="use_web", help="Anexa resultados do DuckDuckGo ao prompt.")
 
     st.markdown(
-        """
+        f"""
         <div class="pessoa-brand">
             <div class="name">pessoa</div>
-            <div class="tag">runs on gemma 4</div>
+            <div class="tag">runs on {chat.MODEL}</div>
             <a class="repo" href="https://github.com/tiagomonteiro0715/pessoa"
                target="_blank" rel="noopener noreferrer">
                 <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor"

@@ -10,4 +10,8 @@ dependencies = [
     "fastembed>=0.8.0",
     "streamlit>=1.58.0",
     "ddgs>=9.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "mcp>=1.0.0",
+    "fastmcp>=3.4.2",
 ]
