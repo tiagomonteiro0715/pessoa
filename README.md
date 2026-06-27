@@ -1,42 +1,31 @@
-# Pessoa
+# Pessoa: Local, LLM Agnostic AI Agent Infrastructure
 
-This project is not just another personal assistant.
+The Manifesto: In the EU, infrastructure should be prioritized instead of base models
 
-I have lived in the San Francisco Bay Area for almost a year, and currently, like chips gave way to computers and computers to the internet, AI is giving way to agents, which is giving way to far better robotics and systems. Hierarchical evolution is happening, and that is why physical IA is the next big thing.
+Historically, computing evolved from silicon chips to PCs, then to the internet. 
 
-It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
+In mid-2026, we are witnessing the next shift!
 
-Important for EU contries to develop their own AI to show iniciative and many other things. Howecver, as of mid 2026, AI is now a lot more around the mdoels than actually in the models itselfs.
+AI is moving from raw models to agentic infrastructure, giving way to world models and physical AI.
 
-Explain a,so how puprohect.toml with uv allows many versions of libraries and less problems in installing thimgs.
+It is crucial for Portugal and the EU to show initiative. However, they should be pragmatic. 
 
-Does not make sense ti create many endpoints for APIs or more details of the frontedn doen with streamlit. this is an template only
+The common critique is that the US and China innovate while the EU regulates. 
 
-In addition, remeber we are now in infrasturcurre and building around AI not AI iteself leave that for orgazations with those capabilities.
+Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping powerful global open-source models (like Gemma) in local infrastructure.
 
-Amalia(upcoming portugeuse LLM) should benefit from thes eideas of using memory, APIs and MCPs to allow integration with more services.
+Pessoa is a blueprint for this pragmatic approach. 
 
-Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices.
+It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce local outputs (like pt-PT). 
 
-The first great thing about this project is its ability to easily be used; with uv and uv lock, the Python dependencies are exactly defined, and the code structure is modular. This way, it is possible to add other files or folders to increase the current codebase. Also, everything everything runs on your machine. The model runs via [Ollama](https://ollama.com) with long-term memory [mem0](https://github.com/mem0ai/mem0) backed by a local [Qdrant](https://qdrant.tech) store.
+This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs, and its output defines the language spoken via system prompts.
 
-Also, her ein bay area mem0 is widely used I know founders that used in in their starytup
+### The Stack & Architecture
+This project is an architectural template. For this reason, it has few API endpoints and only the basic Streamlit frontend needed for an LLM interface.
 
-To ensure transparency, open-source models like Gemma or Qwen are already good for many tasks AI agents can do. For this reason, this stack is not locked into one provider. If you want, you can run it on a laptop and even change the code to run with vLLM on a server for wide organization adoption. In addition, a system prompt enforces pt-PT output. However, the underlying model reads English, which is a big advantage.
+Also, with pyproject.toml and uv for seamless, version-locked, it is very easy to install all needed libraries, and the memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM for anything else, you can!
 
-Why is it a big advanate?
-
-Relying on models with strong English comprehension ensures access to global knowledge and multimodal capabilities. If a model only knows Portuguese and never had English in its training data, how will it ever navigate the web, which is mostly composed of English? The best solution is to be pragmatic.
-
-There is a big saying, which is, The EU basically regulates while the US and China innovate. In my view, Europe needs to be more pragmatic and understand that often many open-source models can be wrapped in infrastructure and used. This way, ensure data privacy laws and others.
-
-Why be waiting for the sovereign model if an open source model from the USA or China, likely multimodal, can perform the same or better?
-
-In addition it is possible to integrate claude skills 
-
-I recommend changing Ollama for vLLM. This way, the system prompt may be adaptable for other languages and other professions. However, the memory layer, API, and MCP infrastructure stay the same. This way, allowing a model agnostic response, aligned with the system prompt, to connect to other services via APIs and MCPs.
-
-> Note: I tried vLLM via Lightning AI Studio but didn't take it further, for other reasons. Since the memory/API/MCP layer is independent of the inference server, swapping the backend stays trivial.
+Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with services.
 
 ## Table of contents
 
