@@ -2,25 +2,26 @@
 
 The Manifesto: In the EU, infrastructure should be prioritized instead of base models
 
-Historically, computing evolved from silicon chips to PCs, then to the internet. 
+Historically, computing evolved from silicon chips to PCs, then to the internet.
 
 In mid-2026, we are witnessing the next shift!
 
 AI is moving from raw models to agentic infrastructure, giving way to world models and physical AI.
 
-It is crucial for Portugal and the EU to show initiative. However, they should be pragmatic. 
+It is crucial for Portugal and the EU to show initiative. However, they should be pragmatic.
 
-The common critique is that the US and China innovate while the EU regulates. 
+The common critique is that the US and China innovate while the EU regulates.
 
 Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping powerful global open-source models (like Gemma) in local infrastructure.
 
-Pessoa is a blueprint for this pragmatic approach. 
+Pessoa is a blueprint for this pragmatic approach.
 
-It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce local outputs (like pt-PT). 
+It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce local outputs (like pt-PT).
 
 This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs, and its output defines the language spoken via system prompts.
 
 ### The Stack & Architecture
+
 This project is an architectural template. For this reason, it has few API endpoints and only the basic Streamlit frontend needed for an LLM interface.
 
 Also, with pyproject.toml and uv for seamless, version-locked, it is very easy to install all needed libraries, and the memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM for anything else, you can!
@@ -29,12 +30,13 @@ Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrat
 
 ## Table of contents
 
-- [Why is this called "Pessoa"?](#why-pessoa)
-- How can I use this project
+- [Why is this project called "Pessoa"?](#why-is-this-project-called-pessoa)
+- [How can I use this project?](#how-can-i-use-this-project)
 - [Requirements](#requirements)
 - [Run](#run)
 - [Project structure](#project-structure)
 - [Configuration](#configuration)
+- [Using Claude Skills as personas](#using-claude-skills-as-personas)
 - [How memory works](#how-memory-works)
 - [Performance notes](#performance-notes)
 - [License](#license)
@@ -156,6 +158,75 @@ Streamlit theme lives in [src/styles.css](src/styles.css).
 Ollama optimization env vars (`OLLAMA_FLASH_ATTENTION=1`,
 `OLLAMA_KV_CACHE_TYPE=q4_0`, `OLLAMA_KEEP_ALIVE=45m`) are applied automatically
 by `ensure_server_env()`, which restarts the Ollama daemon so it picks them up.
+
+## Using Claude Skills as personas
+
+Claude Skills — the markdown-with-YAML-frontmatter format the Claude Code CLI
+ships its built-in personas in — are nothing more than text instructions for
+the model. Pessoa already builds its system prompt as a stack of
+`{"role": "system", "content": …}` blocks (the pt-PT persona, recalled memory,
+optional web/weather facts), so a skill slots into that stack as one more
+block.
+
+> **Status:** implemented. Drop a markdown file under `skills/` (one example
+> ships with the repo: [`skills/code-reviewer.md`](skills/code-reviewer.md))
+> and pass `--skill <name>` to `main.py`.
+
+### Skill file format
+
+A skill is one markdown file. The frontmatter (`name`, `description`) is
+metadata for tooling; the body is what the model actually reads.
+
+````markdown
+---
+name: code-reviewer
+description: Reviews code for bugs and clarity, replies in pt-PT.
+---
+
+És um revisor de código experiente. Quando o utilizador colar código:
+
+- Identifica bugs concretos (não estilo).
+- Sugere apenas alterações com impacto real.
+- Cita o ficheiro:linha quando for visível.
+- Responde sempre em português de Portugal.
+````
+
+### Intended invocation
+
+Drop the file into `skills/` and launch by name:
+
+```bash
+python main.py --skill code-reviewer
+```
+
+Or point at any absolute path:
+
+```bash
+python main.py --skill /any/path/to/foo.md
+```
+
+By default the skill body is **appended** to Pessoa's base pt-PT persona —
+the language and safety rules stay, the skill adds specialization on top.
+Pass `--skill-mode replace` for full persona replacement (advanced: your
+skill then owns the language and safety rules).
+
+### How it wires in
+
+The plumbing is one environment variable (`PESSOA_SKILL=<absolute-path>`,
+plus `PESSOA_SKILL_MODE=append|replace`) set by `main.py` *before* launching
+the Streamlit / API / MCP subprocess. `chat.py` reads it at module import,
+strips the YAML frontmatter (a five-line hand-rolled parser, no `pyyaml`
+dependency), and composes `ACTIVE_SYSTEM_PROMPT` accordingly — that's what
+`stream_answer` then uses as its first system message. The API and MCP entry
+points pick the env var up automatically: launch them with `PESSOA_SKILL=…`
+set in the parent shell and they inherit the persona for free.
+
+The router pattern Pessoa already uses for long-term memory (`mem.search` over
+the user's prompt → top-k results injected into the messages list) could be
+repurposed to surface a skill *on demand* instead of selecting one at launch —
+that's the natural next step if you wanted Pessoa to behave more like Claude
+Code's harness, picking skills automatically by description match rather than
+by an explicit flag.
 
 ## How memory works
 

@@ -18,6 +18,45 @@ from mem0 import Memory
 
 from system_prompt import SYSTEM_PROMPT
 
+
+def _load_skill_body() -> str | None:
+    """Read PESSOA_SKILL (an absolute path set by main.py), strip YAML
+    frontmatter if present, return the body. None if no skill is configured
+    or the file can't be read."""
+    path = os.environ.get("PESSOA_SKILL")
+    if not path:
+        return None
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        print(f"[pessoa] skill load failed: {e}", flush=True)
+        return None
+    lines = text.splitlines()
+    if lines and lines[0].strip() == "---":
+        end = next((i for i, ln in enumerate(lines[1:], 1)
+                    if ln.strip() == "---"), None)
+        if end is not None:
+            lines = lines[end + 1:]
+    body = "\n".join(lines).strip()
+    return body or None
+
+
+def _compose_system_prompt() -> str:
+    """Combine the base pt-PT persona with the loaded skill (if any). Mode
+    comes from PESSOA_SKILL_MODE; defaults to 'append'."""
+    skill = _load_skill_body()
+    if not skill:
+        return SYSTEM_PROMPT
+    mode = os.environ.get("PESSOA_SKILL_MODE", "append").lower()
+    if mode == "replace":
+        print("[pessoa] skill replaces base persona", flush=True)
+        return skill
+    print("[pessoa] skill appended to base persona", flush=True)
+    return f"{SYSTEM_PROMPT}\n\n{skill}"
+
+
+ACTIVE_SYSTEM_PROMPT = _compose_system_prompt()
+
 MODEL = "gemma4:e2b"
 EMBED_MODEL = "nomic-embed-text"
 NUM_CTX = 8192  # Big enough to fit an image/audio attachment + a real turn.
@@ -297,7 +336,7 @@ def stream_answer(
     related = mem.search(prompt, filters={"user_id": USER_ID}, top_k=3).get("results", [])
     context = "\n".join(f"- {m['memory']}" for m in related)
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages = [{"role": "system", "content": ACTIVE_SYSTEM_PROMPT}]
     if context:
         messages.append({
             "role": "system",
