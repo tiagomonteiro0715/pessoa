@@ -6,7 +6,11 @@ I have lived in the San Francisco Bay Area for almost a year, and currently, lik
 
 It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
 
+Does not make sense ti create many endpoints for APIs or more details of the frontedn doen with streamlit. this is an template only
+
 In addition, remeber we are now in infrasturcurre and building around AI not AI iteself leave that for orgazations with those capabilities.
+
+Amalia(upcoming portugeuse LLM) should benefit from thes eideas of using memory, APIs and MCPs to allow integration with more services.
 
 Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices.
 
