@@ -6,6 +6,8 @@ I have lived in the San Francisco Bay Area for almost a year, and currently, lik
 
 It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
 
+In addition, remeber we are now in infrasturcurre and building around AI not AI iteself leave that for orgazations with those capabilities.
+
 Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices.
 
 The first great thing about this project is its ability to easily be used; with uv and uv lock, the Python dependencies are exactly defined, and the code structure is modular. This way, it is possible to add other files or folders to increase the current codebase. Also, everything everything runs on your machine. The model runs via [Ollama](https://ollama.com) with long-term memory [mem0](https://github.com/mem0ai/mem0) backed by a local [Qdrant](https://qdrant.tech) store.
