@@ -1,5 +1,13 @@
 # Pessoa: Local, LLM Agnostic AI Agent Infrastructure
 
+<p align="center">
+  <img src="https://img.shields.io/github/license/tiagomonteiro0715/pessoa" alt="License"/>
+  <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+"/>
+  <img src="https://img.shields.io/github/last-commit/tiagomonteiro0715/pessoa" alt="Last Commit"/>
+  <img src="https://img.shields.io/github/stars/tiagomonteiro0715/pessoa" alt="Stars"/>
+  <img src="https://img.shields.io/github/forks/tiagomonteiro0715/pessoa" alt="Forks"/>
+</p>
+
 The Manifesto: In the EU, infrastructure should be prioritized instead of base models
 
 Historically, computing evolved from silicon chips to PCs, then to the internet.
@@ -28,6 +36,35 @@ Also, with pyproject.toml and uv for seamless, version-locked, it is very easy t
 
 Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with services.
 
+### Project tree
+
+```text
+pessoa/
+├── README.md
+├── LICENSE
+├── pyproject.toml          # uv-locked Python dependencies
+├── main.py                 # launcher: --skill flag, Ollama bootstrap, runs Streamlit
+├── tox.ini                 # tox sessions — Python-version matrix
+├── noxfile.py              # nox sessions — per-test-layer (contract / e2e / limits / mcp)
+├── src/
+│   ├── chat.py             # engine: model config, memory, streaming, skill composition
+│   ├── system_prompt.py    # base pt-PT persona
+│   ├── app.py              # Streamlit chat UI
+│   ├── styles.css          # dark theme + sidebar styling
+│   ├── API/
+│   │   └── server.py       # FastAPI / OpenAPI HTTP wrapper
+│   └── MCP/
+│       └── server.py       # MCP server over stdio (chat, search_memory tools)
+├── skills/
+│   └── code-reviewer.md    # example Claude Skill (pt-PT)
+├── tests/
+│   ├── test_api_contract.py   # schema + endpoints, no LLM
+│   ├── test_api_e2e.py        # real generation against Ollama
+│   ├── test_api_limits.py     # concurrency sweep (needs server running)
+│   └── test_mcp.py            # MCP tool list + invocations
+└── pessoa_qdrant/          # local Qdrant vector store (runtime data)
+```
+
 ## Table of contents
 
 - [Why is this project called "Pessoa"?](#why-is-this-project-called-pessoa)
@@ -39,6 +76,9 @@ Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrat
 - [Using Claude Skills as personas](#using-claude-skills-as-personas)
 - [How memory works](#how-memory-works)
 - [Performance notes](#performance-notes)
+- [Contributing](#contributing)
+- [Built With](#built-with)
+- [Contact](#contact)
 - [License](#license)
 
 ## Why is this project called "Pessoa"?
@@ -255,6 +295,42 @@ Streamlit UI.
 - If the *first* prompt after startup is slow, that's the model loading into
   memory; later prompts reuse it (kept warm by `KEEP_ALIVE`).
 
+## Contributing
+
+This project is a working template — improvements and corrections are welcome.
+
+- **Found a bug, or noticed something off about the pt-PT prompt?** Open an issue or email me.
+- **Have a skill file worth shipping with the repo?** Drop it under `skills/` and open a PR.
+- **Tested on a Python version, alternative backend (vLLM, llama.cpp, …), or model not currently listed?** Let me know — I want to keep the model-agnostic / version-agnostic claims honest.
+
+Reach out at monteiro.t@northeastern.edu or via GitHub issues.
+
+## Built With
+
+- [Ollama](https://ollama.com) — local LLM inference (default: `gemma4:e2b`)
+- [mem0](https://github.com/mem0ai/mem0) — long-term memory layer
+- [Qdrant](https://qdrant.tech) — on-disk vector store (embedded mode)
+- [Streamlit](https://streamlit.io) — chat UI
+- [FastAPI](https://fastapi.tiangolo.com) — OpenAPI 3.0 HTTP wrapper
+- [mcp Python SDK / FastMCP](https://github.com/modelcontextprotocol/python-sdk) — Model Context Protocol server over stdio
+- [uv](https://github.com/astral-sh/uv) — dependency management + lockfile
+- [tox](https://tox.wiki) / [nox](https://nox.thea.codes) — multi-environment test orchestration
+
+## Contact
+
+**Tiago Monteiro**
+
+- Email: monteiro.t@northeastern.edu
+- GitHub: [@tiagomonteiro0715](https://github.com/tiagomonteiro0715)
+- FreeCodeCamp: [Author profile](https://www.freecodecamp.org/news/author/tiagomonteiro)
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  If this template helped you ship a local agent stack, please star the repo.<br>
+  It helps others find it.
+</p>
