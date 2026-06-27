@@ -1,45 +1,55 @@
 # Pessoa
 
-A local, ChatGPT-style assistant that speaks **Português de Portugal (pt-PT)** and
-remembers past conversations. Everything runs on your machine — the model via
-[Ollama](https://ollama.com), long-term memory via [mem0](https://github.com/mem0ai/mem0)
-backed by a local [Qdrant](https://qdrant.tech) store. No cloud, no API keys.
+This project is not just another personal assistant.
+
+It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
+
+Both a LLM agnostic tool for chatting, an APIs and MCPs protocol for connections to other setvices 
+
+The first great thing about this project is its ability to easily be used; with uv and uv lock, the Python dependencies are exactly defined, and the code structure is modular. This way, it is possible to add other files or folders to increase the current codebase. Also,  Everything runs on your machine. The model runs via [Ollama](https://ollama.com) with long-term memory [mem0](https://github.com/mem0ai/mem0) backed by a local [Qdrant](https://qdrant.tech) store.
+
+To ensure transparency, open-source models like Gemma or Qwen are already good for many tasks AI agents can do. For this reason, this stack is not locked into one provider. If you want, you can run it on a laptop and even change the code to run with vLLM on a server for wide organization adoption. In addition, a system prompt enforces pt-PT output. However, the underlying model reads English, which is a big advantage.
+
+Why is it a big advanate?
+
+Relying on models with strong English comprehension ensures access to global knowledge and multimodal capabilities. If a model only knows Portuguese and never had English in its training data, how will it ever navigate the web, which is mostly composed of English? The best solution is to be pragmatic.
+
+There is a big saying, which is, The EU basically regulates while the US and China innovate. In my view, Europe needs to be more pragmatic and understand that often many open-source models can be wrapped in infrastructure and used. This way, ensure data privacy laws and others.
+
+Why be waiting for the sovereign model if an open source model from the USA or China, likely multimodal, can perform the same or better?
+
+I recommend changing Ollama for vLLM. This way, the system prompt may be adaptable for other languages and other professions. However, the memory layer, API, and MCP infrastructure stay the same. This way, allowing a model agnostic response, aligned with the system prompt, to connect to other services via APIs and MCPs.
+
+
+
+
+
+
+
 
 ## Table of contents
 
-- [Why "Pessoa"?](#why-pessoa)
+- [Why is this project called "Pessoa"?](#why-pessoa)
 - [Requirements](#requirements)
 - [Run](#run)
 - [Project structure](#project-structure)
 - [Configuration](#configuration)
 - [How memory works](#how-memory-works)
 - [Performance notes](#performance-notes)
-- [A bigger thesis: from desktop chatbot to public infrastructure](#a-bigger-thesis-from-desktop-chatbot-to-public-infrastructure)
-  - [Engineering choices that scale](#engineering-choices-that-scale)
-  - [Model-agnostic by design](#model-agnostic-by-design)
-  - [The bilingual advantage](#the-bilingual-advantage)
-  - [A position on European AI](#a-position-on-european-ai)
-  - [From citizen to State, same code](#from-citizen-to-state-same-code)
 
-## Why "Pessoa"?
+## Why is this project called "Pessoa"?
 
-Named after **Fernando António Nogueira de Seabra Pessoa** (13 June 1888 – 30
-November 1935) — Portuguese poet, writer, literary critic, translator and
-publisher, widely regarded as one of the most significant literary figures of
-the 20th century and one of the greatest poets in the Portuguese language. He
-also wrote in and translated from English and French. *Pessoa* also literally
-means "person" in Portuguese — a fitting name for a conversational assistant
-that speaks pt-PT.
+Named after **Fernando António Nogueira de Seabra Pessoa** (13 June 1888 to 30 November 1935), regarded as one of the most important Portuguese literary figures of the 20th century and one of the greatest poets in the Portuguese language. *Pessoa* also means "person" in Portuguese.
 
-What makes the name especially apt is Pessoa's invention of **heteronyms** —
-not pseudonyms, but fully-realised alternate personas with their own
-biographies, styles and (sometimes unpopular) opinions. He wrote under
-roughly seventy-five of them; the three that stand out are **Alberto Caeiro**,
-**Álvaro de Campos** and **Ricardo Reis**. An LLM driven by a tuned system
-prompt is doing the same trick in miniature: stepping into a defined persona
-to write. This project leans into that — the persona lives in
-[src/system_prompt.py](src/system_prompt.py) and is what makes the assistant
-sound like *Pessoa* rather than a default chatbot.
+What makes the name especially great is Pessoa's invention of **heteronyms**. Heteronyms are not pseudonyms. You can think of them as alternate personas with their own biographies, styles, and opinions. He wrote under roughly seventy-five of them. Three that stand out:
+
+ - **Alberto Caeiro**
+ - **Álvaro de Campos**
+ - **Ricardo Reis**
+
+An LLM driven by a tuned system prompt is doing the same trick in miniature: stepping into a defined persona to write. 
+
+This project leans into many personas! In this case the persona lives in [src/system_prompt.py](src/system_prompt.py) and is what makes the assistant sound like *Pessoa* rather than a default chatbot.
 
 You can use it three ways:
 
@@ -164,77 +174,3 @@ Streamlit UI.
 - Background, `infer=False` memory writes keep the model free for your next prompt.
 - If the *first* prompt after startup is slow, that's the model loading into
   memory; later prompts reuse it (kept warm by `KEEP_ALIVE`).
-
-## A bigger thesis: from desktop chatbot to public infrastructure
-
-This project isn't only a personal assistant. It's a working sketch of how I
-think public-sector AI in Portugal — and in the EU more broadly — should be
-built. A few threads in the design are deliberate, not incidental.
-
-### Engineering choices that scale
-
-- **`uv` + `uv.lock` for dependency management.** A lockfile that pins exact
-  versions across Python interpreters means anyone, on any machine, in any
-  year, can reproduce the same environment in seconds. For a public-sector
-  codebase that's the difference between "works on the engineer's laptop"
-  and "deployable in 2030 against the same dependency graph."
-- **Modular [src/chat.py](src/chat.py).** Model, embedder, memory and the
-  system prompt are all touched in one file. There's nothing magic to find.
-  A junior engineer or an auditor reads it in five minutes — and that
-  matters more than clever abstractions do.
-
-Anyone walking into the repo sees current-decade tooling (`uv.lock`, a
-modular `chat.py`, a typed FastAPI surface, an MCP server) and treats it as
-a breath of fresh air rather than yet another half-rotten Flask project.
-
-### Model-agnostic by design
-
-I chose **`gemma4:e2b`** — a small, Apache-licensed Google model — because
-the point is *not* the model. Swap `MODEL` in [src/chat.py](src/chat.py) for
-any Ollama tag (or any [vLLM](https://github.com/vllm-project/vllm)-served
-checkpoint) and the rest of the stack — memory, API, MCP, UI — keeps
-working unchanged. Today: small, fast, runs on a laptop. Tomorrow, on State
-hardware: a 70B+ open-source frontier model behind vLLM, same code, same
-endpoints.
-
-### The bilingual advantage
-
-The system prompt forces the assistant to reply in pt-PT, but the underlying
-model still **understands and reads English** fluently. That matters: the
-live web search (`use_web`) returns mostly English content, and the model
-interprets it without a translation step. A model trained purely on European
-languages would be cut off from the bulk of online knowledge — and from the
-multimodal (image/audio) capabilities that today only the big open-source
-families ship with.
-
-### A position on European AI
-
-The current pattern is hard to argue with: **the US creates frontier models,
-China replicates them, and the EU regulates.** There isn't a competitive
-European foundation model — and building one trained only on European
-languages would be a strategic dead end (poor English comprehension, no
-multimodal parity, perpetual catch-up). The pragmatic move is to take the
-best open-source models out of the US and China — Gemma, Llama, Qwen,
-DeepSeek — and **wrap them in sovereign infrastructure, sovereign prompts,
-and sovereign data**. That's exactly what this codebase demonstrates at
-hobby scale.
-
-### From citizen to State, same code
-
-The unusual property of this stack is that **the same code that runs a
-citizen's local chatbot runs as State infrastructure** — just swap Ollama
-for vLLM and `gemma4:e2b` for a larger checkpoint. The persona
-([src/system_prompt.py](src/system_prompt.py)) travels. The memory layer
-([mem0](https://github.com/mem0ai/mem0) on a local
-[Qdrant](https://qdrant.tech) store) — a simple, app-agnostic interface —
-travels. The API ([src/API/server.py](src/API/server.py)) and
-the MCP server ([src/MCP/server.py](src/MCP/server.py)) travel. No rewrites
-between deployment targets.
-
-That's the leverage. The State already funds Portuguese-language datasets so
-that engineers can use real data to make better, more informed decisions;
-adding a thin, model-agnostic assistant layer on top turns those datasets
-into something a citizen, a desk officer, or a minister can actually *talk
-to*. A pt-PT system prompt running on the best open-source weights, with
-persistent memory, on Portuguese infrastructure, is a small but real
-affirmation of what the country can ship.
