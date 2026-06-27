@@ -15,3 +15,10 @@ dependencies = [
     "mcp>=1.0.0",
     "fastmcp>=3.4.2",
 ]
+
+[project.optional-dependencies]
+# Installed only on GPU machines: `uv sync --extra gpu`. vLLM has no Windows
+# wheels, hence the platform marker — `uv sync` on Windows simply skips it.
+gpu = [
+    "vllm>=0.5.0; sys_platform == 'linux'",
+]

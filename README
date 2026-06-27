@@ -1,0 +1,294 @@
+# Pessoa
+
+A local, ChatGPT-style assistant that speaks **Português de Portugal (pt-PT)** and
+remembers past conversations. Everything runs on your machine — the model via
+[Ollama](https://ollama.com), long-term memory via [mem0](https://github.com/mem0ai/mem0)
+backed by a local [Qdrant](https://qdrant.tech) store. No cloud, no API keys.
+
+## Table of contents
+
+- [Why "Pessoa"?](#why-pessoa)
+- [Requirements](#requirements)
+- [Run](#run)
+- [Project structure](#project-structure)
+- [Configuration](#configuration)
+- [How memory works](#how-memory-works)
+- [Performance notes](#performance-notes)
+- [A bigger thesis: from desktop chatbot to public infrastructure](#a-bigger-thesis-from-desktop-chatbot-to-public-infrastructure)
+  - [Engineering choices that scale](#engineering-choices-that-scale)
+  - [Model-agnostic by design](#model-agnostic-by-design)
+  - [The bilingual advantage](#the-bilingual-advantage)
+  - [A position on European AI](#a-position-on-european-ai)
+  - [From citizen to State, same code](#from-citizen-to-state-same-code)
+
+## Why "Pessoa"?
+
+Named after **Fernando António Nogueira de Seabra Pessoa** (13 June 1888 – 30
+November 1935) — Portuguese poet, writer, literary critic, translator and
+publisher, widely regarded as one of the most significant literary figures of
+the 20th century and one of the greatest poets in the Portuguese language. He
+also wrote in and translated from English and French. *Pessoa* also literally
+means "person" in Portuguese — a fitting name for a conversational assistant
+that speaks pt-PT.
+
+What makes the name especially apt is Pessoa's invention of **heteronyms** —
+not pseudonyms, but fully-realised alternate personas with their own
+biographies, styles and (sometimes unpopular) opinions. He wrote under
+roughly seventy-five of them; the three that stand out are **Alberto Caeiro**,
+**Álvaro de Campos** and **Ricardo Reis**. An LLM driven by a tuned system
+prompt is doing the same trick in miniature: stepping into a defined persona
+to write. This project leans into that — the persona lives in
+[src/system_prompt.py](src/system_prompt.py) and is what makes the assistant
+sound like *Pessoa* rather than a default chatbot.
+
+You can use it three ways:
+
+- **Streamlit chat UI** — multi-chat sidebar (search, inline rename, date
+  groups, kebab actions, "Mostrar mais"), streaming answers, *Parar geração*,
+  animated typing indicator, a streaming-dot on the active chat, image/audio
+  attachments, optional live web/weather lookup.
+- **OpenAPI HTTP API** ([src/API/server.py](src/API/server.py)) — a FastAPI
+  wrapper exposing `/chat`, `/memory/search`, and `/health`; Swagger UI at
+  `/docs`, OpenAPI 3.0 spec at `/openapi.json`.
+- **MCP server** ([src/MCP/server.py](src/MCP/server.py)) — Model Context
+  Protocol over stdio, with `chat` and `search_memory` tools that any MCP
+  client (Claude Desktop, etc.) can call.
+
+## Requirements
+
+- [Ollama](https://ollama.com) installed (the launcher pulls models on first run).
+  Required for CPU / "Compatibility Mode" and for memory embeddings even in
+  GPU mode.
+- [uv](https://github.com/astral-sh/uv) for dependency management.
+- *(GPU mode only)* a CUDA-capable Linux machine — auto-detected via
+  `nvidia-smi`. See **GPU mode (vLLM)** below.
+
+## Run
+
+#### Install dependencies
+
+```bash
+uv sync
+```
+
+#### Launch the Streamlit UI (the usual way)
+
+```bash
+uv run python main.py
+```
+
+`main.py` ensures Ollama is up with the right env vars, pulls `gemma4:e2b` and
+`nomic-embed-text` if missing, then runs `streamlit run src/app.py`. Open
+http://localhost:8501.
+
+Equivalent direct command (skips the bootstrap):
+
+```bash
+uv run streamlit run src/app.py
+```
+
+#### Run the HTTP API
+
+```bash
+uv run python src/API/server.py
+```
+
+Then open http://127.0.0.1:8000/docs.
+
+#### Run the MCP server
+
+```bash
+uv run python src/MCP/server.py
+```
+
+#### GPU mode (vLLM)
+
+When the app boots, [src/chat.py](src/chat.py) probes `nvidia-smi`. If a GPU
+is found, it switches to **High Performance Mode** and uses
+[vLLM](https://github.com/vllm-project/vllm) with
+`google/gemma-2-2b-it` (a real Hugging Face checkpoint). If no GPU is found
+it falls back to **Compatibility Mode** with Ollama and `gemma4:e2b`.
+
+| Mode | Trigger | Chat engine | Model |
+|------|---------|-------------|-------|
+| Compatibility | no GPU detected | Ollama | `gemma4:e2b` |
+| High Performance | `nvidia-smi` returns a device | vLLM (in-process) | `google/gemma-2-2b-it` |
+
+To install on a Linux GPU box (e.g. LightningAI):
+
+```bash
+uv sync --extra gpu
+uv run python main.py
+```
+
+Force one or the other with an environment variable:
+
+```bash
+PESSOA_ENGINE=vllm   uv run python main.py   # force vLLM (errors if no GPU)
+PESSOA_ENGINE=ollama uv run python main.py   # force Ollama even on a GPU box
+PESSOA_ENGINE=auto   uv run python main.py   # default: auto-detect
+```
+
+First chat in vLLM mode pays a one-time ~30s model download/load; subsequent
+chats reuse the loaded engine. vLLM mode currently returns the full reply as
+one chunk (no token-by-token streaming) — minimum-code trade-off; the UI
+shows typing dots then the full answer.
+
+For Claude Desktop, add it to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "pessoa": {
+      "command": "uv",
+      "args": ["run", "python", "/absolute/path/to/src/MCP/server.py"]
+    }
+  }
+}
+```
+
+## Project structure
+
+| File | Purpose |
+|------|---------|
+| `main.py` | Launcher: ensure Ollama is up, pull models, run the Streamlit UI. |
+| `src/app.py` | Streamlit chat UI (layout, multi-chat state, streaming). |
+| `src/chat.py` | Shared logic: model config, memory, Ollama setup, streaming. |
+| `src/system_prompt.py` | Persona / language / safety prompt (pt-PT). |
+| `src/styles.css` | Dark theme + sidebar styling for the Streamlit app. |
+| `src/API/server.py` | FastAPI server (OpenAPI 3.0 spec at `/openapi.json`). |
+| `src/MCP/server.py` | MCP server over stdio (`chat`, `search_memory` tools). |
+| `pessoa_qdrant/` | Local [Qdrant](https://qdrant.tech) vector store on disk (persists memory across restarts). |
+
+## Configuration
+
+Tunables live at the top of [src/chat.py](src/chat.py):
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| `OLLAMA_MODEL` | `gemma4:e2b` | Chat model used in Compatibility Mode. |
+| `VLLM_MODEL` | `google/gemma-2-2b-it` | HF id used in High Performance Mode. |
+| `MODEL` | *(derived)* | Whichever of the two is active for this process. |
+| `EMBED_MODEL` | `nomic-embed-text` | Embeddings for memory search (Ollama). |
+| `NUM_CTX` | `8192` | Context window. Larger = more context but slower / heavier. |
+| `MAX_OUTPUT_TOKENS` | `1024` | vLLM-side cap on response length. |
+| `KEEP_ALIVE` | `45m` | How long Ollama keeps the model warm in memory. |
+| `USER_ID` | `pessoa` | mem0 user id; change to keep separate memory stores. |
+| `STOP` | Llama stop tokens | No-op for Gemma; adjust if you switch model family. |
+| `CONSOLIDATE_EVERY` | `600` | Seconds between async memory-consolidation passes. |
+| `CONSOLIDATE_AFTER` | `300` | Only fold raw memories older than this many seconds. |
+| `CONSOLIDATE_MIN_BATCH` | `6` | Skip a consolidation cycle below this many pending raws. |
+
+The system prompt lives in [src/system_prompt.py](src/system_prompt.py); the
+Streamlit theme lives in [src/styles.css](src/styles.css).
+
+Ollama optimization env vars (`OLLAMA_FLASH_ATTENTION=1`,
+`OLLAMA_KV_CACHE_TYPE=q4_0`, `OLLAMA_KEEP_ALIVE=45m`) are applied automatically
+by `ensure_server_env()`, which restarts the Ollama daemon so it picks them up.
+
+## How memory works
+
+1. On each prompt, the top-k relevant memories are retrieved (`mem.search`) and
+   prepended to the model's context as *"Memória relevante"*.
+2. After the answer streams, the exchange is stored **in the background** with
+   `infer=False` (tagged `metadata={"raw": True, "ts": …}`) — saved as a raw
+   snippet without an LLM extraction pass, so memory writes never block (or
+   compete with) your next prompt.
+3. A separate **async consolidator** (running on its own event loop in a
+   daemon thread) wakes every `CONSOLIDATE_EVERY` seconds. While the chat is
+   idle, it gathers raw snippets older than `CONSOLIDATE_AFTER`, re-adds them
+   via `mem.add(..., infer=True)` so mem0's LLM extracts compact facts, then
+   deletes the raw originals. Result: the vector space stays small and
+   on-topic instead of accumulating verbatim chat noise.
+
+The consolidator checks an internal `_chat_busy` event before running and
+skips its cycle if a chat is in flight, so it never queues ahead of a user
+prompt at Ollama's one-request-per-model slot.
+
+Under the hood, **mem0 is wired to a local [Qdrant](https://qdrant.tech)
+instance** running entirely on disk in `pessoa_qdrant/` (no Qdrant server
+process — the embedded mode). Embeddings have dimension 768 to match
+`nomic-embed-text`. Nothing ever leaves the machine. Memory persists across
+restarts, and the HTTP API and the MCP server share the same store as the
+Streamlit UI.
+
+## Performance notes
+
+- Smaller `NUM_CTX` → faster prompt evaluation and a lighter KV cache.
+- Background, `infer=False` memory writes keep the model free for your next prompt.
+- If the *first* prompt after startup is slow, that's the model loading into
+  memory; later prompts reuse it (kept warm by `KEEP_ALIVE`).
+
+## A bigger thesis: from desktop chatbot to public infrastructure
+
+This project isn't only a personal assistant. It's a working sketch of how I
+think public-sector AI in Portugal — and in the EU more broadly — should be
+built. A few threads in the design are deliberate, not incidental.
+
+### Engineering choices that scale
+
+- **`uv` + `uv.lock` for dependency management.** A lockfile that pins exact
+  versions across Python interpreters means anyone, on any machine, in any
+  year, can reproduce the same environment in seconds. For a public-sector
+  codebase that's the difference between "works on the engineer's laptop"
+  and "deployable in 2030 against the same dependency graph."
+- **Modular [src/chat.py](src/chat.py).** Model, embedder, memory and the
+  system prompt are all touched in one file. There's nothing magic to find.
+  A junior engineer or an auditor reads it in five minutes — and that
+  matters more than clever abstractions do.
+
+Anyone walking into the repo sees current-decade tooling (`uv.lock`, a
+modular `chat.py`, a typed FastAPI surface, an MCP server) and treats it as
+a breath of fresh air rather than yet another half-rotten Flask project.
+
+### Model-agnostic by design
+
+I chose **`gemma4:e2b`** — a small, Apache-licensed Google model — because
+the point is *not* the model. Swap `MODEL` in [src/chat.py](src/chat.py) for
+any Ollama tag (or any [vLLM](https://github.com/vllm-project/vllm)-served
+checkpoint) and the rest of the stack — memory, API, MCP, UI — keeps
+working unchanged. Today: small, fast, runs on a laptop. Tomorrow, on State
+hardware: a 70B+ open-source frontier model behind vLLM, same code, same
+endpoints.
+
+### The bilingual advantage
+
+The system prompt forces the assistant to reply in pt-PT, but the underlying
+model still **understands and reads English** fluently. That matters: the
+live web search (`use_web`) returns mostly English content, and the model
+interprets it without a translation step. A model trained purely on European
+languages would be cut off from the bulk of online knowledge — and from the
+multimodal (image/audio) capabilities that today only the big open-source
+families ship with.
+
+### A position on European AI
+
+The current pattern is hard to argue with: **the US creates frontier models,
+China replicates them, and the EU regulates.** There isn't a competitive
+European foundation model — and building one trained only on European
+languages would be a strategic dead end (poor English comprehension, no
+multimodal parity, perpetual catch-up). The pragmatic move is to take the
+best open-source models out of the US and China — Gemma, Llama, Qwen,
+DeepSeek — and **wrap them in sovereign infrastructure, sovereign prompts,
+and sovereign data**. That's exactly what this codebase demonstrates at
+hobby scale.
+
+### From citizen to State, same code
+
+The unusual property of this stack is that **the same code that runs a
+citizen's local chatbot runs as State infrastructure** — just swap Ollama
+for vLLM and `gemma4:e2b` for a larger checkpoint. The persona
+([src/system_prompt.py](src/system_prompt.py)) travels. The memory layer
+([mem0](https://github.com/mem0ai/mem0) on a local
+[Qdrant](https://qdrant.tech) store) — a simple, app-agnostic interface —
+travels. The API ([src/API/server.py](src/API/server.py)) and
+the MCP server ([src/MCP/server.py](src/MCP/server.py)) travel. No rewrites
+between deployment targets.
+
+That's the leverage. The State already funds Portuguese-language datasets so
+that engineers can use real data to make better, more informed decisions;
+adding a thin, model-agnostic assistant layer on top turns those datasets
+into something a citizen, a desk officer, or a minister can actually *talk
+to*. A pt-PT system prompt running on the best open-source weights, with
+persistent memory, on Portuguese infrastructure, is a small but real
+affirmation of what the country can ship.
