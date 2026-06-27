@@ -8,11 +8,9 @@
   <img src="https://img.shields.io/github/forks/tiagomonteiro0715/pessoa" alt="Forks"/>
 </p>
 
-The Manifesto: In the EU, infrastructure should be prioritized instead of base models
+Historically, computing grew from silicon chips to PCs, then to the internet.
 
-Historically, computing evolved from silicon chips to PCs, then to the internet.
-
-In mid-2026, we are witnessing the next shift!
+I arrived in San Fransisco bay area in mid 2025. Now, in mid-2026, we are witnessing the next shift!
 
 AI is moving from raw models to agentic infrastructure, giving way to world models and physical AI.
 
@@ -83,7 +81,7 @@ pessoa/
 
 ## Why is this project called "Pessoa"?
 
-![image of fernando pessoa](https://github.com/tiagomonteiro0715/pessoa/blob/main/fernando.jpg))
+![image of fernando pessoa](https://github.com/tiagomonteiro0715/pessoa/blob/main/fernando.jpg)
 
 Named after **Fernando António Nogueira de Seabra Pessoa** (13 June 1888 to 30 November 1935), regarded as one of the most important Portuguese literary figures of the 20th century and one of the greatest poets in the Portuguese language. *Pessoa* also means "person" in Portuguese.
 
