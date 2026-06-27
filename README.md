@@ -32,6 +32,8 @@ There is a big saying, which is, The EU basically regulates while the US and Chi
 
 Why be waiting for the sovereign model if an open source model from the USA or China, likely multimodal, can perform the same or better?
 
+In addition it is possible to integrate claude skills 
+
 I recommend changing Ollama for vLLM. This way, the system prompt may be adaptable for other languages and other professions. However, the memory layer, API, and MCP infrastructure stay the same. This way, allowing a model agnostic response, aligned with the system prompt, to connect to other services via APIs and MCPs.
 
 > Note: I tried vLLM via Lightning AI Studio but didn't take it further, for other reasons. Since the memory/API/MCP layer is independent of the inference server, swapping the backend stays trivial.
