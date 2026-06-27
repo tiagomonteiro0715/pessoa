@@ -34,6 +34,8 @@ Why be waiting for the sovereign model if an open source model from the USA or C
 
 I recommend changing Ollama for vLLM. This way, the system prompt may be adaptable for other languages and other professions. However, the memory layer, API, and MCP infrastructure stay the same. This way, allowing a model agnostic response, aligned with the system prompt, to connect to other services via APIs and MCPs.
 
+> Note: I tried vLLM via Lightning AI Studio but didn't take it further, for other reasons. Since the memory/API/MCP layer is independent of the inference server, swapping the backend stays trivial.
+
 ## Table of contents
 
 - [Why is this called "Pessoa"?](#why-pessoa)
@@ -44,6 +46,7 @@ I recommend changing Ollama for vLLM. This way, the system prompt may be adaptab
 - [Configuration](#configuration)
 - [How memory works](#how-memory-works)
 - [Performance notes](#performance-notes)
+- [License](#license)
 
 ## Why is this project called "Pessoa"?
 
@@ -72,7 +75,7 @@ This project leans into many personas! In this case the persona lives in [src/sy
   `/docs`, OpenAPI 3.0 spec at `/openapi.json`.
 - **MCP server** ([src/MCP/server.py](src/MCP/server.py)) — Model Context
   Protocol over stdio, with `chat` and `search_memory` tools that any MCP
-  client (Claude Desktop, etc.) can call.
+  client (Claude Desktop, etc.) can call — including via Claude skills.
 
 ## Requirements
 
@@ -171,6 +174,11 @@ by `ensure_server_env()`, which restarts the Ollama daemon so it picks them up.
    `infer=False` — saved as a raw snippet without an LLM extraction pass, so
    memory writes never block (or compete with) your next prompt.
 
+> Trade-off: because `infer=False` stores raw snippets, the vector space can
+> accumulate redundant chat noise over time. Planned improvement: an async
+> background worker (`asyncio`) that, when the system is idle, periodically
+> aggregates and condenses those memories with the LLM.
+
 Under the hood, **mem0 is wired to a local [Qdrant](https://qdrant.tech)
 instance** running entirely on disk in `pessoa_qdrant/` (no Qdrant server
 process — the embedded mode). Embeddings have dimension 768 to match
@@ -184,3 +192,7 @@ Streamlit UI.
 - Background, `infer=False` memory writes keep the model free for your next prompt.
 - If the *first* prompt after startup is slow, that's the model loading into
   memory; later prompts reuse it (kept warm by `KEEP_ALIVE`).
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).

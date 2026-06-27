@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from chat import ensure_model_pulled, ensure_server_env  # noqa: E402
+from chat import ensure_model_pulled, ensure_server_env 
 
 ensure_server_env()
 ensure_model_pulled()

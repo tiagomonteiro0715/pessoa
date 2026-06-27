@@ -18,40 +18,11 @@ from mem0 import Memory
 
 from system_prompt import SYSTEM_PROMPT
 
-OLLAMA_MODEL = "gemma4:e2b"
-VLLM_MODEL = "google/gemma-2-2b-it"   # HF id; used when a CUDA GPU is detected
+MODEL = "gemma4:e2b"
 EMBED_MODEL = "nomic-embed-text"
 NUM_CTX = 8192  # Big enough to fit an image/audio attachment + a real turn.
-MAX_OUTPUT_TOKENS = 1024              # vLLM-side cap for one response
 KEEP_ALIVE = "45m"
 USER_ID = "pessoa"
-
-
-def _detect_gpu() -> bool:
-    """True if `nvidia-smi` reports at least one GPU."""
-    if not shutil.which("nvidia-smi"):
-        return False
-    try:
-        r = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=5,
-        )
-        return r.returncode == 0 and bool(r.stdout.strip())
-    except Exception:
-        return False
-
-
-# Engine selection happens once, at module import:
-#   - PESSOA_ENGINE=vllm   → force vLLM
-#   - PESSOA_ENGINE=ollama → force Ollama
-#   - PESSOA_ENGINE=auto (default) → vLLM if GPU detected, else Ollama
-_engine_override = os.environ.get("PESSOA_ENGINE", "auto").lower()
-USE_VLLM = (_engine_override == "vllm") or (
-    _engine_override == "auto" and _detect_gpu()
-)
-ENGINE = "vllm" if USE_VLLM else "ollama"
-MODEL = VLLM_MODEL if USE_VLLM else OLLAMA_MODEL
-print(f"[pessoa] engine={ENGINE} model={MODEL}", flush=True)
 
 # Memory-consolidation worker: raw chat snippets persisted with infer=False
 # are periodically distilled into facts via mem0's LLM extraction. Tunables:
@@ -79,50 +50,17 @@ _chat_busy = threading.Event()
 _consolidator_started = False
 
 
-class _NoMemory:
-    """Drop-in replacement when mem0 can't init (e.g. vLLM mode without Ollama
-    for embeddings). Every method is a safe no-op so chat keeps working."""
-    def search(self, *_a, **_k): return {"results": []}
-    def add(self, *_a, **_k): return None
-    def get_all(self, *_a, **_k): return {"results": []}
-    def delete(self, *_a, **_k): return None
-
-
-def build_memory():
+def build_memory() -> Memory:
     """Create the mem0 store. Kept as a function so callers (e.g. Streamlit)
-    can cache the instance instead of building it at import time. Returns a
-    no-op stub if mem0/Ollama isn't reachable, so the chat path still works."""
-    try:
-        mem = Memory.from_config({
-            "llm": {"provider": "ollama", "config": {"model": OLLAMA_MODEL}},
-            "embedder": {"provider": "ollama", "config": {"model": EMBED_MODEL}},
-            "vector_store": {"provider": "qdrant", "config": {
-                "path": QDRANT_PATH, "embedding_model_dims": 768}},
-        })
-    except Exception as e:
-        print(f"[pessoa] memory disabled (mem0 init failed: {e})", flush=True)
-        return _NoMemory()
-    try:
-        _ensure_consolidator(mem)
-    except Exception as e:
-        print(f"[pessoa] consolidator init failed: {e}", flush=True)
+    can cache the instance instead of building it at import time."""
+    mem = Memory.from_config({
+        "llm": {"provider": "ollama", "config": {"model": MODEL}},
+        "embedder": {"provider": "ollama", "config": {"model": EMBED_MODEL}},
+        "vector_store": {"provider": "qdrant", "config": {
+            "path": QDRANT_PATH, "embedding_model_dims": 768}},
+    })
+    _ensure_consolidator(mem)
     return mem
-
-
-# vLLM in-process engine: heavy to load, so kept lazy. First chat in vLLM mode
-# pays the ~30s of model download/load; subsequent chats reuse the same engine.
-_vllm_engine = None
-
-
-def _vllm():
-    global _vllm_engine
-    if _vllm_engine is None:
-        print(f"[pessoa] loading vLLM model {VLLM_MODEL} — first time only…",
-              flush=True)
-        from vllm import LLM
-        _vllm_engine = LLM(model=VLLM_MODEL, dtype="auto",
-                           gpu_memory_utilization=0.85)
-    return _vllm_engine
 
 
 def _ensure_consolidator(mem: Memory) -> None:
@@ -190,8 +128,6 @@ def ensure_server_env():
     already-running daemon, so the daemon has to be bounced with the vars in its
     own environment. How that's done is platform-specific.
     """
-    if USE_VLLM:
-        return False
     missing = {k: v for k, v in SERVER_ENV.items() if os.environ.get(k) != v}
     if not missing:
         return False
@@ -259,13 +195,8 @@ def _ollama_is_systemd() -> bool:
 
 
 def ensure_model_pulled():
-    if USE_VLLM:
-        # vLLM downloads from Hugging Face on demand when the engine first loads.
-        print(f"[pessoa] vLLM mode — {VLLM_MODEL} will download on first chat.",
-              flush=True)
-        return
     installed = {m.model for m in ollama.list().models}
-    for model in (OLLAMA_MODEL, EMBED_MODEL):
+    for model in (MODEL, EMBED_MODEL):
         print(f"Ensuring model '{model}' is available...")
         if not any(m == model or m.startswith(f"{model}:") for m in installed):
             print(f"Pulling {model}...")
@@ -447,32 +378,18 @@ def stream_answer(
     answer = ""
     _chat_busy.set()
     try:
-        if USE_VLLM:
-            # vLLM in-process: blocking generation, one big chunk back.
-            # No token streaming in this mode — UI shows typing dots then the
-            # full reply. Strip non-text keys (images/audios) from the messages
-            # before handing to vLLM, which expects plain role/content dicts.
-            from vllm import SamplingParams
-            clean = [{"role": m["role"], "content": m["content"]} for m in messages]
-            sampling = SamplingParams(temperature=0.7,
-                                      max_tokens=MAX_OUTPUT_TOKENS,
-                                      stop=STOP or None)
-            outputs = _vllm().chat(clean, sampling)
-            answer = outputs[0].outputs[0].text
-            yield answer
-        else:
-            stream = ollama.chat(
-                model=OLLAMA_MODEL,
-                messages=messages,
-                think=False,
-                keep_alive=KEEP_ALIVE,
-                options={"num_ctx": NUM_CTX, "stop": STOP},
-                stream=True,
-            )
-            for chunk in stream:
-                piece = chunk.message.content
-                answer += piece
-                yield piece
+        stream = ollama.chat(
+            model=MODEL,
+            messages=messages,
+            think=False,
+            keep_alive=KEEP_ALIVE,
+            options={"num_ctx": NUM_CTX, "stop": STOP},
+            stream=True,
+        )
+        for chunk in stream:
+            piece = chunk.message.content
+            answer += piece
+            yield piece
     finally:
         for p in tmp_paths:
             try:
