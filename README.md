@@ -22,7 +22,8 @@ I recommend changing Ollama for vLLM. This way, the system prompt may be adaptab
 
 ## Table of contents
 
-- [Why is this project called "Pessoa"?](#why-pessoa)
+- [Why is this called "Pessoa"?](#why-pessoa)
+- How can I use this project
 - [Requirements](#requirements)
 - [Run](#run)
 - [Project structure](#project-structure)
@@ -46,7 +47,7 @@ An LLM driven by a tuned system prompt is doing the same trick in miniature: ste
 
 This project leans into many personas! In this case the persona lives in [src/system_prompt.py](src/system_prompt.py) and is what makes the assistant sound like *Pessoa* rather than a default chatbot.
 
-You can use it three ways:
+## How can I use this project? 
 
 - **Streamlit chat UI** — multi-chat sidebar (search, inline rename, date
   groups, kebab actions, "Mostrar mais"), streaming answers, *Parar geração*,
