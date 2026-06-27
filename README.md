@@ -6,6 +6,8 @@ I have lived in the San Francisco Bay Area for almost a year, and currently, lik
 
 It’s a blueprint for how AI in my home country (Portugal) and honestly the EU should be.
 
+Important for EU contries to develop their own AI to show iniciative and many other things. Howecver, as of mid 2026, AI is now a lot more around the mdoels than actually in the models itselfs.
+
 Does not make sense ti create many endpoints for APIs or more details of the frontedn doen with streamlit. this is an template only
 
 In addition, remeber we are now in infrasturcurre and building around AI not AI iteself leave that for orgazations with those capabilities.
