@@ -33,7 +33,6 @@ This way, by the LLM knowing English as its foundational language, it can intera
 - [Why is this project called "Pessoa"?](#why-is-this-project-called-pessoa)
 - [How can I use this project?](#how-can-i-use-this-project)
 - [Stack, Architecture and Project tree](#stack)
-- [Requirements](#requirements)
 - [Run](#run)
 - [Configuration](#configuration)
 - [Using Claude Skills as personas](#using-claude-skills-as-personas)
@@ -71,7 +70,7 @@ This project leans into many personas! In this case the persona lives in [src/sy
   Protocol over stdio, with `chat` and `search_memory` tools that any MCP
   client (Claude Desktop, etc.) can call — including via Claude skills.
 
-### Stack, Architecture and Project tree
+## Stack, Architecture and Project tree
 
 This project is an system with a modular architecture. For this reason, it has few API endpoints and a Streamlit frontend as an LLM interface.
 
@@ -113,24 +112,30 @@ pessoa/
 ```
 
 
-## Requirements
-
-- [Ollama](https://ollama.com) installed (the launcher pulls models on first run).
-- [uv](https://github.com/astral-sh/uv) for dependency management.
-- **Python 3.12, 3.13, or 3.14.** Tested on all three via the `tox` matrix
-  (see [Run the tests](#run-the-tests) below). Python 3.15 currently fails
-  because `lxml` lacks prebuilt wheels for it. On Linux / macOS, lock the
-  project to a known-good interpreter to avoid resolver surprises:
-
-  ```bash
-  uv python pin 3.13
-  ```
-
-  That writes a `.python-version` file so every `uv run …` uses 3.13.
-
 ## Run
 
 #### Install dependencies
+
+
+This project uses uv to manage all python dependencies. So the first step is [having uv installed in your computer](https://docs.astral.sh/uv/).
+
+In addition it uses ollama as the inference engine and this way [ollama is needed to be installed as well](https://ollama.com/).
+
+First step is just to get the code in your local directory
+```bash
+git clone https://github.com/tiagomonteiro0715/pessoa
+cd pessoa
+```
+
+From there, to ensure no depencies problem, you can pin python 3.12, 3.13 or 3.14. 
+
+Below I show how to install and use python version 3.13
+```bash
+uv python install 3.13
+uv python pin 3.13
+```
+
+Finally, with just two words we get all the python libraries to run the project!
 
 ```bash
 uv sync
