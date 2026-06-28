@@ -22,7 +22,7 @@ The main criticism of the EU is its excess of regulation. While the US and China
 
 Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping open-source models (like Gemma4) in local infrastructure.
 
-Pessoa is a blueprint for this pragmatic approach.
+Pessoa is a blueprint(less than 1200 lines of python code) for this pragmatic approach.
 
 It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce outputs in a given language.
 
