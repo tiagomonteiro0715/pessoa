@@ -17,7 +17,7 @@ I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are
 A lot of AI is moving from LLMs to agentic infrastructure. From research side, world models are becoming more popular and physical AI will likely come next afer or during AI!
 
 It is crucial for Portugal and the EU to show initiative with their own LLMs. However, they should be pragmatic.
-
+F
 The main criticism of the EU is its excess of regulation. While the US and China innovate, the EU regulates.
 
 Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping open-source models (like Gemma4) in local infrastructure.
