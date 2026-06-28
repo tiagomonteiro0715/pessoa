@@ -282,11 +282,10 @@ by `ensure_server_env()`, which restarts the Ollama daemon so it picks them up.
 
 ## Using Claude Skills as personas
 
-Claude Skills — the markdown-with-YAML-frontmatter format the Claude Code CLI
-ships its built-in personas in — are nothing more than text instructions for
-the model. Pessoa already builds its system prompt as a stack of
+Claude Skills are nothing more than text instructions for
+an LLM. Pessoa already builds its system prompt as a stack of
 `{"role": "system", "content": …}` blocks (the pt-PT persona, recalled memory,
-optional web/weather facts), so a skill slots into that stack as one more
+optional web/weather facts). This way, a skill slots into that stack as one more
 block.
 
 > **Status:** implemented. Drop a markdown file under `skills/` (one example
