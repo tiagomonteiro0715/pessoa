@@ -116,6 +116,16 @@ This project leans into many personas! In this case the persona lives in [src/sy
 
 - [Ollama](https://ollama.com) installed (the launcher pulls models on first run).
 - [uv](https://github.com/astral-sh/uv) for dependency management.
+- **Python 3.12, 3.13, or 3.14.** Tested on all three via the `tox` matrix
+  (see [Run the tests](#run-the-tests) below). Python 3.15 currently fails
+  because `lxml` lacks prebuilt wheels for it. On Linux / macOS, lock the
+  project to a known-good interpreter to avoid resolver surprises:
+
+  ```bash
+  uv python pin 3.13
+  ```
+
+  That writes a `.python-version` file so every `uv run …` uses 3.13.
 
 ## Run
 
@@ -140,6 +150,15 @@ Equivalent direct command (skips the bootstrap):
 ```bash
 uv run streamlit run src/app.py
 ```
+
+> **Linux + systemd Ollama**: the launcher detects this and prints the manual
+> env-var edits you'd need (`OLLAMA_FLASH_ATTENTION=1`,
+> `OLLAMA_KV_CACHE_TYPE=q4_0`, `OLLAMA_KEEP_ALIVE=45m`) under
+> `sudo systemctl edit ollama.service`. Applying them is a one-time perf win;
+> skipping is harmless — everything still works without them.
+
+> **First-run download**: the first time mem0's NLP backend kicks in, it pulls
+> the spaCy `en_core_web_sm` model (~13 MB). Subsequent runs reuse it.
 
 #### Run the HTTP API
 
@@ -167,6 +186,35 @@ For Claude Desktop, add it to your MCP config:
   }
 }
 ```
+
+#### Run the tests
+
+On Ubuntu, the sequence I used to exercise the matrix + the four test layers end-to-end:
+
+```bash
+uv sync                       # installs deps, including tox + nox
+
+# Make the Python interpreters tox will sweep actually available.
+uv python install 3.12
+uv python install 3.13
+uv python install 3.14
+uv python install 3.15        # optional — currently fails on lxml; see Requirements
+
+# Multi-Python matrix (contract tests only).
+uv run tox
+
+# Per-layer sessions on Python 3.12.
+nox -s contract               # fast, no real inference
+nox -s api_e2e                # slow, real LLM
+nox -s mcp                    # slow, spawns the MCP server; real LLM
+
+# For the limits session, the API must be running externally:
+uv run python src/API/server.py     # terminal 1
+nox -s api_limits                   # terminal 2
+```
+
+See [`tox.ini`](tox.ini) and [`noxfile.py`](noxfile.py) for how the
+environments and sessions are wired.
 
 ## Project structure
 
@@ -292,10 +340,20 @@ Streamlit UI.
 
 ## Performance notes
 
+Measured on an HP EliteBook 840 G3 (i7-6500U, CPU only, no GPU) running
+Ubuntu with Ollama under systemd:
+
+- **Baseline:** one short `/chat` request → about **3-5 seconds** end-to-end.
+- **Concurrency** — Ollama overlaps requests partially (not pure
+  serialization). Wall-clock observed via `nox -s api_limits`:
+  - `N=2` concurrent → 6.5s total (avg 5.1s per request)
+  - `N=4` concurrent → 12.7s total (avg 8.5s per request)
+- **`/health` under load** — stayed at ~5 ms while `/chat` was busy. No
+  accidental global lock in the API path.
+- **First prompt is slowest** — that's the model loading into memory; later
+  prompts reuse the warm model via `KEEP_ALIVE`.
 - Smaller `NUM_CTX` → faster prompt evaluation and a lighter KV cache.
 - Background, `infer=False` memory writes keep the model free for your next prompt.
-- If the *first* prompt after startup is slow, that's the model loading into
-  memory; later prompts reuse it (kept warm by `KEEP_ALIVE`).
 
 ## Contributing
 
