@@ -28,49 +28,11 @@ It uses Gemma 4 (can be changed for any other LLM) while using system prompts (c
 
 This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs. Something a non-English LLM will likely have difficulty with.
 
-### The Stack & Architecture
-
-This project is an architectural template. For this reason, it has few API endpoints and a Streamlit frontend as an LLM interface.
-
-Also, with pyproject.toml and uv, it is very easy to install all needed libraries.
-
-The memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM or anything else, you can easily!
-
-Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with other services and tools.
-
-### Project tree
-
-```text
-pessoa/
-├── README.md
-├── LICENSE
-├── pyproject.toml          # uv-locked Python dependencies
-├── main.py                 # launcher: --skill flag, Ollama bootstrap, runs Streamlit
-├── tox.ini                 # tox sessions — Python-version matrix
-├── noxfile.py              # nox sessions — per-test-layer (contract / e2e / limits / mcp)
-├── src/
-│   ├── chat.py             # engine: model config, memory, streaming, skill composition
-│   ├── system_prompt.py    # base pt-PT persona
-│   ├── app.py              # Streamlit chat UI
-│   ├── styles.css          # dark theme + sidebar styling
-│   ├── API/
-│   │   └── server.py       # FastAPI / OpenAPI HTTP wrapper
-│   └── MCP/
-│       └── server.py       # MCP server over stdio (chat, search_memory tools)
-├── skills/
-│   └── code-reviewer.md    # example Claude Skill (pt-PT)
-├── tests/
-│   ├── test_api_contract.py   # schema + endpoints, no LLM
-│   ├── test_api_e2e.py        # real generation against Ollama
-│   ├── test_api_limits.py     # concurrency sweep (needs server running)
-│   └── test_mcp.py            # MCP tool list + invocations
-└── pessoa_qdrant/          # local Qdrant vector store (runtime data)
-```
-
 ## Table of contents
 
 - [Why is this project called "Pessoa"?](#why-is-this-project-called-pessoa)
 - [How can I use this project?](#how-can-i-use-this-project)
+- [Stack, Architecture and Project tree](#stack)
 - [Requirements](#requirements)
 - [Run](#run)
 - [Project structure](#project-structure)
@@ -111,6 +73,48 @@ This project leans into many personas! In this case the persona lives in [src/sy
 - **MCP server** ([src/MCP/server.py](src/MCP/server.py)) — Model Context
   Protocol over stdio, with `chat` and `search_memory` tools that any MCP
   client (Claude Desktop, etc.) can call — including via Claude skills.
+
+### Stack, Architecture and Project tree
+
+This project is an system with a modular architecture. For this reason, it has few API endpoints and a Streamlit frontend as an LLM interface.
+
+Also, with pyproject.toml and uv, it is very easy to install all needed libraries.
+
+The memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM or anything else, you can easily!
+
+Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with other services and tools.
+
+In the end, the streamlit is just a basic playground and the most comporant components are the memory layer sepeareted from the API and MCP.
+
+#### Project tree
+
+```text
+pessoa/
+├── README.md
+├── LICENSE
+├── pyproject.toml          # uv-locked Python dependencies
+├── main.py                 # launcher: --skill flag, Ollama bootstrap, runs Streamlit
+├── tox.ini                 # tox sessions — Python-version matrix
+├── noxfile.py              # nox sessions — per-test-layer (contract / e2e / limits / mcp)
+├── src/
+│   ├── chat.py             # engine: model config, memory, streaming, skill composition
+│   ├── system_prompt.py    # base pt-PT persona
+│   ├── app.py              # Streamlit chat UI
+│   ├── styles.css          # dark theme + sidebar styling
+│   ├── API/
+│   │   └── server.py       # FastAPI / OpenAPI HTTP wrapper
+│   └── MCP/
+│       └── server.py       # MCP server over stdio (chat, search_memory tools)
+├── skills/
+│   └── code-reviewer.md    # example Claude Skill (pt-PT)
+├── tests/
+│   ├── test_api_contract.py   # schema + endpoints, no LLM
+│   ├── test_api_e2e.py        # real generation against Ollama
+│   ├── test_api_limits.py     # concurrency sweep (needs server running)
+│   └── test_mcp.py            # MCP tool list + invocations
+└── pessoa_qdrant/          # local Qdrant vector store (runtime data)
+```
+
 
 ## Requirements
 
