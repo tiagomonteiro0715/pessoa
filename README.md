@@ -17,7 +17,7 @@ I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are
 A lot of AI is moving from LLMs to agentic infrastructure. From research side, world models are becoming more popular and physical AI will likely come next afer or during AI!
 
 It is crucial for Portugal and the EU to show initiative with their own LLMs. However, they should be pragmatic.
-F
+
 The main criticism of the EU is its excess of regulation. While the US and China innovate, the EU regulates.
 
 Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping open-source models (like Gemma4) in local infrastructure.
@@ -37,8 +37,6 @@ This way, by the LLM knowing English as its foundational language, it can intera
 - [Run](#run)
 - [Configuration](#configuration)
 - [Using Claude Skills as personas](#using-claude-skills-as-personas)
-- [How memory works](#how-memory-works)
-- [Performance notes](#performance-notes)
 - [Contributing](#contributing)
 - [Built With](#built-with)
 - [Contact](#contact)
@@ -334,43 +332,6 @@ that's the natural next step if you wanted Pessoa to behave more like Claude
 Code's harness, picking skills automatically by description match rather than
 by an explicit flag.
 
-## How memory works
-
-1. On each prompt, the top-k relevant memories are retrieved (`mem.search`) and
-   prepended to the model's context as *"Memória relevante"*.
-2. After the answer streams, the exchange is stored **in the background** with
-   `infer=False` — saved as a raw snippet without an LLM extraction pass, so
-   memory writes never block (or compete with) your next prompt.
-
-> Trade-off: because `infer=False` stores raw snippets, the vector space can
-> accumulate redundant chat noise over time. Planned improvement: an async
-> background worker (`asyncio`) that, when the system is idle, periodically
-> aggregates and condenses those memories with the LLM.
-
-Under the hood, **mem0 is wired to a local [Qdrant](https://qdrant.tech)
-instance** running entirely on disk in `pessoa_qdrant/` (no Qdrant server
-process — the embedded mode). Embeddings have dimension 768 to match
-`nomic-embed-text`. Nothing ever leaves the machine. Memory persists across
-restarts, and the HTTP API and the MCP server share the same store as the
-Streamlit UI.
-
-## Performance notes
-
-Measured on an HP EliteBook 840 G3 (i7-6500U, CPU only, no GPU) running
-Ubuntu with Ollama under systemd:
-
-- **Baseline:** one short `/chat` request → about **3-5 seconds** end-to-end.
-- **Concurrency** — Ollama overlaps requests partially (not pure
-  serialization). Wall-clock observed via `nox -s api_limits`:
-  - `N=2` concurrent → 6.5s total (avg 5.1s per request)
-  - `N=4` concurrent → 12.7s total (avg 8.5s per request)
-- **`/health` under load** — stayed at ~5 ms while `/chat` was busy. No
-  accidental global lock in the API path.
-- **First prompt is slowest** — that's the model loading into memory; later
-  prompts reuse the warm model via `KEEP_ALIVE`.
-- Smaller `NUM_CTX` → faster prompt evaluation and a lighter KV cache.
-- Background, `infer=False` memory writes keep the model free for your next prompt.
-
 ## Contributing
 
 This project is a working template — improvements and corrections are welcome.
@@ -383,13 +344,13 @@ Reach out at monteiro.t@northeastern.edu or via GitHub issues.
 
 ## Built With
 
+- [uv](https://github.com/astral-sh/uv) — dependency management + lockfile
 - [Ollama](https://ollama.com) — local LLM inference (default: `gemma4:e2b`)
 - [mem0](https://github.com/mem0ai/mem0) — long-term memory layer
 - [Qdrant](https://qdrant.tech) — on-disk vector store (embedded mode)
 - [Streamlit](https://streamlit.io) — chat UI
 - [FastAPI](https://fastapi.tiangolo.com) — OpenAPI 3.0 HTTP wrapper
 - [mcp Python SDK / FastMCP](https://github.com/modelcontextprotocol/python-sdk) — Model Context Protocol server over stdio
-- [uv](https://github.com/astral-sh/uv) — dependency management + lockfile
 - [tox](https://tox.wiki) / [nox](https://nox.thea.codes) — multi-environment test orchestration
 
 ## Contact
