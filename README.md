@@ -68,7 +68,7 @@ This project leans into many personas! In this case the persona lives in [src/sy
   `/docs`, OpenAPI 3.0 spec at `/openapi.json`.
 - **MCP server** ([src/MCP/server.py](src/MCP/server.py)) — Model Context
   Protocol over stdio, with `chat` and `search_memory` tools that any MCP
-  client (Claude Desktop, etc.) can call — including via Claude skills.
+  client (Claude Desktop, etc.) can call.
 
 ## Stack, Architecture and Project tree
 
