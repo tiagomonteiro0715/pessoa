@@ -1,5 +1,7 @@
 # Pessoa: Local, LLM Agnostic AI Agent Infrastructure
 
+![Pessoa Logo](/logo_compressed.png)
+
 <p align="center">
   <img src="https://img.shields.io/github/license/tiagomonteiro0715/pessoa" alt="License"/>
   <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python 3.12+"/>
