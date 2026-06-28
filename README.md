@@ -144,6 +144,7 @@ uv sync
 #### Launch the Streamlit UI (the usual way)
 
 ```bash
+ollama serve (In an seperate terminal)
 uv run python main.py
 ```
 
