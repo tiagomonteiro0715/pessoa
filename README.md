@@ -13,7 +13,7 @@
 ## Project Demo
 
 <p align="center">
-  <video src="https://github.com/tiagomonteiro0715/pessoa/raw/main/pessoa_demo_basic.mp4" width="100%" controls>
+  <video src="https://github.com/tiagomonteiro0715/pessoa/blob/main/pessoa_demo_basic.mp4" width="100%" controls>
     Your browser does not support the video tag.
   </video>
 </p>
