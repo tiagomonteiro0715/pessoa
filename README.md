@@ -10,6 +10,13 @@
   <img src="https://img.shields.io/github/forks/tiagomonteiro0715/pessoa" alt="Forks"/>
 </p>
 
+## Project Demo
+
+https://github.com/tiagomonteiro0715/pessoa/blob/main/pessoa_demo_basic.mp4
+
+-------
+
+
 Over many decades, computing grew from silicon chips to PCs and then to the internet.
 
 I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are witnessing the next shift in AI!
