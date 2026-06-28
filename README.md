@@ -230,7 +230,6 @@ The sequence above was run on Ubuntu / i7-6500U (CPU only, no GPU):
 
 | Env | Status | Time | Notes |
 |---|---|---|---|
-| `py311` | SKIP | 1.4s | Interpreter not installed |
 | `py312` | ✓ | 9m 41s | First-run cost: pulled `gemma4:e2b` from Ollama during `ensure_model_pulled()` |
 | `py313` | ✓ | 1m 16s | Model already cached |
 | `py314` | ✓ | 1m 12s | Model already cached |
@@ -318,24 +317,6 @@ By default the skill body is **appended** to Pessoa's base pt-PT persona —
 the language and safety rules stay, the skill adds specialization on top.
 Pass `--skill-mode replace` for full persona replacement (advanced: your
 skill then owns the language and safety rules).
-
-### How it wires in
-
-The plumbing is one environment variable (`PESSOA_SKILL=<absolute-path>`,
-plus `PESSOA_SKILL_MODE=append|replace`) set by `main.py` *before* launching
-the Streamlit / API / MCP subprocess. `chat.py` reads it at module import,
-strips the YAML frontmatter (a five-line hand-rolled parser, no `pyyaml`
-dependency), and composes `ACTIVE_SYSTEM_PROMPT` accordingly — that's what
-`stream_answer` then uses as its first system message. The API and MCP entry
-points pick the env var up automatically: launch them with `PESSOA_SKILL=…`
-set in the parent shell and they inherit the persona for free.
-
-The router pattern Pessoa already uses for long-term memory (`mem.search` over
-the user's prompt → top-k results injected into the messages list) could be
-repurposed to surface a skill *on demand* instead of selecting one at launch —
-that's the natural next step if you wanted Pessoa to behave more like Claude
-Code's harness, picking skills automatically by description match rather than
-by an explicit flag.
 
 ## Contributing
 
