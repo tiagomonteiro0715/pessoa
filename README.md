@@ -10,31 +10,33 @@
   <img src="https://img.shields.io/github/forks/tiagomonteiro0715/pessoa" alt="Forks"/>
 </p>
 
-Historically, computing grew from silicon chips to PCs, then to the internet.
+Over many decades, computing grew from silicon chips to PCs and then to the internet.
 
-I arrived in San Fransisco bay area in mid 2025. Now, in mid-2026, we are witnessing the next shift!
+I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are witnessing the next shift in AI!
 
-AI is moving from raw models to agentic infrastructure, giving way to world models and physical AI.
+AI is moving from models to agentic infrastructure, giving way to world models and physical AI.
 
-It is crucial for Portugal and the EU to show initiative. However, they should be pragmatic.
+It is crucial for Portugal and the EU to show initiative with their own LLMs. However, they should be pragmatic.
 
-The common critique is that the US and China innovate while the EU regulates.
+The main criticism of the EU is its excess of regulation. While the US and China innovate, the EU regulates.
 
-Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping powerful global open-source models (like Gemma) in local infrastructure.
+Instead of waiting for a sovereign European foundation model, the EU can achieve data privacy and great performance by wrapping open-source models (like Gemma4) in local infrastructure.
 
 Pessoa is a blueprint for this pragmatic approach.
 
-It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce local outputs (like pt-PT).
+It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce outputs in a given language.
 
-This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs, and its output defines the language spoken via system prompts.
+This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs. Something a non-English LLM will likely have difficulty with.
 
 ### The Stack & Architecture
 
-This project is an architectural template. For this reason, it has few API endpoints and only the basic Streamlit frontend needed for an LLM interface.
+This project is an architectural template. For this reason, it has few API endpoints and a Streamlit frontend as an LLM interface.
 
-Also, with pyproject.toml and uv for seamless, version-locked, it is very easy to install all needed libraries, and the memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM for anything else, you can!
+Also, with pyproject.toml and uv, it is very easy to install all needed libraries.
 
-Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with services.
+The memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM or anything else, you can easily!
+
+Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with other services and tools.
 
 ### Project tree
 
