@@ -14,7 +14,7 @@ Over many decades, computing grew from silicon chips to PCs and then to the inte
 
 I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are witnessing the next shift in AI!
 
-A lot of AI is moving from LLMs to agentic infrastructure. From research side, world models are becoming more popular and physical AI will likely come next afer or during AI!
+A lot of AI is moving from LLMs to agentic infrastructure. From research side, world models are becoming more popular and physical AI will likely come next!
 
 It is crucial for Portugal and the EU to show initiative with their own LLMs. However, they should be pragmatic.
 
