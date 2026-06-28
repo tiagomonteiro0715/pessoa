@@ -35,7 +35,6 @@ This way, by the LLM knowing English as its foundational language, it can intera
 - [Stack, Architecture and Project tree](#stack)
 - [Requirements](#requirements)
 - [Run](#run)
-- [Project structure](#project-structure)
 - [Configuration](#configuration)
 - [Using Claude Skills as personas](#using-claude-skills-as-personas)
 - [How memory works](#how-memory-works)
@@ -245,19 +244,6 @@ The sequence above was run on Ubuntu / i7-6500U (CPU only, no GPU):
 
 See [Performance notes](#performance-notes) for the actual latency numbers
 produced by the `api_limits` session.
-
-## Project structure
-
-| File | Purpose |
-|------|---------|
-| `main.py` | Launcher: ensure Ollama is up, pull models, run the Streamlit UI. |
-| `src/app.py` | Streamlit chat UI (layout, multi-chat state, streaming). |
-| `src/chat.py` | Shared logic: model config, memory, Ollama setup, streaming. |
-| `src/system_prompt.py` | Persona / language / safety prompt (pt-PT). |
-| `src/styles.css` | Dark theme + sidebar styling for the Streamlit app. |
-| `src/API/server.py` | FastAPI server (OpenAPI 3.0 spec at `/openapi.json`). |
-| `src/MCP/server.py` | MCP server over stdio (`chat`, `search_memory` tools). |
-| `pessoa_qdrant/` | Local [Qdrant](https://qdrant.tech) vector store on disk (persists memory across restarts). |
 
 ## Configuration
 
