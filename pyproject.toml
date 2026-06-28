@@ -1,9 +1,28 @@
 [project]
 name = "pessoa"
 version = "0.2.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+description = "Local, model-agnostic AI agent infrastructure (Ollama + mem0 + Qdrant + Streamlit/FastAPI/MCP), with a pt-PT system prompt by default."
+readme = "README"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.15"
+authors = [
+    {name = "Tiago Monteiro", email = "monteiro.t@northeastern.edu"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Natural Language :: Portuguese",
+]
 dependencies = [
     "ollama>=0.6.2",
     "mem0ai[nlp]>=0.1.0",
@@ -17,3 +36,13 @@ dependencies = [
     "tox>=4.0",
     "nox>=2024.0",
 ]
+
+[project.optional-dependencies]
+# Test-only deps. `tox.ini` and `noxfile.py` both install `httpx` ad hoc;
+# this is the single source of truth instead.
+test = ["httpx"]
+
+[project.urls]
+Homepage = "https://github.com/tiagomonteiro0715/pessoa"
+Repository = "https://github.com/tiagomonteiro0715/pessoa"
+Issues = "https://github.com/tiagomonteiro0715/pessoa/issues"

@@ -2,6 +2,8 @@
 
 Used by both the CLI (main.py) and the Streamlit UI (src/app.py).
 """
+from __future__ import annotations
+
 import asyncio
 import os
 import re
@@ -12,9 +14,17 @@ import tempfile
 import threading
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import ollama
-from mem0 import Memory
+
+# Lazy: `mem0` transitively pulls torch / transformers / fastembed / spacy /
+# qdrant-client / posthog — hundreds of MB and several seconds of import time.
+# Defer it to build_memory(), so processes that only need ensure_server_env() /
+# ensure_model_pulled() (e.g. main.py's launcher, the contract test suite)
+# don't pay for what they never use.
+if TYPE_CHECKING:
+    from mem0 import Memory
 
 from system_prompt import SYSTEM_PROMPT
 
@@ -92,6 +102,8 @@ _consolidator_started = False
 def build_memory() -> Memory:
     """Create the mem0 store. Kept as a function so callers (e.g. Streamlit)
     can cache the instance instead of building it at import time."""
+    from mem0 import Memory  # deferred — see TYPE_CHECKING note at top of module
+
     mem = Memory.from_config({
         "llm": {"provider": "ollama", "config": {"model": MODEL}},
         "embedder": {"provider": "ollama", "config": {"model": EMBED_MODEL}},
@@ -154,8 +166,9 @@ def _consolidate_once(mem: Memory) -> None:
     for m in raws:
         try:
             mem.delete(memory_id=m["id"])
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[pessoa] consolidator delete failed for "
+                  f"{m.get('id')}: {e}", flush=True)
     print(f"[pessoa] consolidated {len(raws)} raw memories → facts", flush=True)
 
 
@@ -452,7 +465,7 @@ def stream_answer(
                 infer=False,
                 metadata={"raw": True, "ts": time.time()},
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[pessoa] memory write failed: {e}", flush=True)
 
     threading.Thread(target=_store, daemon=True).start()
