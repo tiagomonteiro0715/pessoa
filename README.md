@@ -24,7 +24,7 @@ Instead of waiting for a sovereign European foundation model, the EU can achieve
 
 Pessoa is a blueprint(less than 1200 lines of python code) for this pragmatic approach.
 
-It uses Gemma 4 (can be changed for any other LLM) while using system prompts (currently only Portuguese ones) to enforce outputs in a given language.
+It uses Gemma 4 (can be changed for any other LLM), a memory layer and system prompts (currently only a Portuguese one) to enforce outputs in a given language.
 
 This way, by the LLM knowing English as its foundational language, it can interact with the web and other services via APIs and MCPs. Something a non-English LLM will likely have difficulty with.
 
