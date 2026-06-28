@@ -216,6 +216,32 @@ nox -s api_limits                   # terminal 2
 See [`tox.ini`](tox.ini) and [`noxfile.py`](noxfile.py) for how the
 environments and sessions are wired.
 
+#### Results
+
+The sequence above was run on Ubuntu / i7-6500U (CPU only, no GPU):
+
+**tox matrix (contract tests across Python versions):**
+
+| Env | Status | Time | Notes |
+|---|---|---|---|
+| `py311` | SKIP | 1.4s | Interpreter not installed |
+| `py312` | ✓ | 9m 41s | First-run cost: pulled `gemma4:e2b` from Ollama during `ensure_model_pulled()` |
+| `py313` | ✓ | 1m 16s | Model already cached |
+| `py314` | ✓ | 1m 12s | Model already cached |
+| `py315` | ✗ | 7.7s | `lxml` build fails — no prebuilt wheels for py315 yet |
+
+**nox sessions (per-test-layer, all on Python 3.12):**
+
+| Session | Status | Tests | Time |
+|---|---|---|---|
+| `contract` | ✓ | 6 / 6 | ~1 min (mostly venv create + dep install) |
+| `api_e2e` | ✓ | 4 / 4 | 49s |
+| `mcp` | ✓ | 5 / 5 | 28s |
+| `api_limits` | ✓ | 3 / 3 | 31s |
+
+See [Performance notes](#performance-notes) for the actual latency numbers
+produced by the `api_limits` session.
+
 ## Project structure
 
 | File | Purpose |
