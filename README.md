@@ -86,13 +86,13 @@ This project leans into many personas! In this case the persona lives in [src/sy
 
 This project is an system with a modular architecture. For this reason, it has few API endpoints and a Streamlit frontend as an LLM interface.
 
+The streamlit is just a basic playground and can be changed for any frontend tech like nodejs based frameworks.
+
 Also, with pyproject.toml and uv, it is very easy to install all needed libraries.
 
 The memory layer (mem0 + qdrant) is decoupled from the inference engine. So if you want to switch Ollama for vLLM or anything else, you can easily!
 
-Finally, it runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with other services and tools.
-
-In the end, the streamlit is just a basic playground and the most comporant components are the memory layer sepeareted from the API and MCP.
+It runs 100% locally, and it uses FastAPI and FastMCP to allow integrations with other services and tools.
 
 #### Project tree
 
