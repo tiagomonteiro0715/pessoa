@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/578a01c2-3cbe-42d1-b85d-b348e144cd90
 
 Over many decades, computing grew from silicon chips to PCs and then to the internet.
 
-I arrived in the San Francisco Bay Area in august 2025. Now, in mid-2026, we are witnessing the next shift in AI!
+I arrived in the San Francisco Bay Area in August 2025. Now, in mid-2026, we are witnessing the next shift in AI!
 
 A lot of AI is moving from LLMs to agentic infrastructure. From research side, world models are becoming more popular and physical AI will likely come next!
 
