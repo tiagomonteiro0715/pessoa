@@ -1,0 +1,70 @@
+Pessoa
+Copyright 2026 Tiago Monteiro
+
+This product is licensed under the Apache License, Version 2.0
+(the "License"). You may not use this file except in compliance with
+the License. A copy of the License is included in the LICENSE file
+at the root of this repository and is also available at:
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing
+permissions and limitations under the License.
+
+================================================================
+Third-party dependencies
+================================================================
+
+This software depends on a number of open-source libraries, each
+distributed under its own license. The complete, resolved dependency
+tree is captured in pyproject.toml and uv.lock. The major direct
+dependencies declared in pyproject.toml are:
+
+    ollama-python    MIT             https://github.com/ollama/ollama-python
+    mem0ai           Apache-2.0      https://github.com/mem0ai/mem0
+    fastembed        Apache-2.0      https://github.com/qdrant/fastembed
+    streamlit        Apache-2.0      https://streamlit.io
+    ddgs             MIT             https://github.com/deedy5/ddgs
+    fastapi          MIT             https://fastapi.tiangolo.com
+    uvicorn          BSD-3-Clause    https://www.uvicorn.org
+    mcp              MIT             https://github.com/modelcontextprotocol/python-sdk
+    fastmcp          Apache-2.0      https://github.com/jlowin/fastmcp
+    tox              MIT             https://tox.wiki
+    nox              Apache-2.0      https://nox.thea.codes
+
+For any Apache-2.0 dependency that ships its own NOTICE file, the
+attributions contained therein apply to this distribution as required
+by the Apache License, Version 2.0, Section 4(d).
+
+================================================================
+Models
+================================================================
+
+Pessoa does NOT bundle or redistribute model weights. By default it
+loads the following models on demand via Ollama. Use of those models
+is governed by their respective licenses, not by Pessoa's Apache-2.0
+license:
+
+    gemma4:e2b
+        Google Gemma family.
+        Use of Gemma models is subject to Google's Gemma Terms of Use:
+        https://ai.google.dev/gemma/terms
+
+    nomic-embed-text
+        Nomic AI, Apache-2.0
+        https://huggingface.co/nomic-ai/nomic-embed-text-v1.5
+
+Changing MODEL or EMBED_MODEL in src/chat.py will subject your
+deployment to the license terms of whatever weights you point those
+at. Verify compatibility before commercial use.
+
+================================================================
+Project
+================================================================
+
+Pessoa — Local, LLM-Agnostic AI Agent Infrastructure
+Repository:  https://github.com/tiagomonteiro0715/pessoa
+Author:      Tiago Monteiro <monteiro.t@northeastern.edu>
